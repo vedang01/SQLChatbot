@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Demonstration of ChatGPT API in a Python Flask Application. A Skolo Online course.">
+
+    <title> SQLWizard</title>
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/a11y-dark.min.css">
+    
+    <!-- Add some inline CSS for the custom styles -->
+    <style>
+        .bot-message {
+            background-color: #e0e0e0;
+        }
+
+        .user-message {
+            background-color: #292c2f;
+            color: white;
+        }
+        .sql-query-block {
+            background-color: #f7f9fc;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-family: "Courier New", monospace;
+        }
+
+
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <!-- Adding the SQL Wizard heading -->
+        <h1 style="color:black; text-align:center">SQL Wizard</h1>
+        <div id="list-group" class="list-group w-auto mt-3">
+            <div class="list-group-item d-flex gap-3 py-3 bot-message">
+                <img src="https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
+                <div class="d-flex gap-2 w-100 justify-content-between">
+                    <div>
+                        <p class="mb-0 opacity-75">Hello! I am SQLWizard, and I am here to help you on any SQL-related queries.
+                            Once finished, you may type 'quit' to end the session.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group mb-3 mt-3">
+            <input type="text" class="form-control" id="chat-input">
+            <div class="input-group-append">
+                <button id="gpt-button" class="btn btn-primary">Ask SQLWizard</button>
+            </div>
+        </div>
+        <div id="loading-indicator" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <!-- <span class="sr-only">Loading...</span> -->
+            </div>
+            <p class="mb-0 mt-2">Loading...</p>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <script>
+        setInterval(highlightAll, 1000);
+        function highlightAll() {
+            document.querySelectorAll("pre code").forEach(block => {
+                hljs.highlightBlock(block);
+            });
+        }
+
+        const chatInput = document.querySelector('#chat-input');
+        
+        
+        // Main Driver function, askSQLWizard sends question to API, receives response, and displays using addMessage
+        function askSQLWizard(){
+            showLoadingIndicator();
+             const question = chatInput.value.trim();
+    
+            if (question) {
+                //if user wants to quit
+                if (question.toLowerCase() === 'quit') {
+                    hideLoadingIndicator();
+                    addMessage(question, true);
+
+                    addMessage("Hope today's session was productive!", false);
+        
+                    // disable the chat input and button to end the session
+                    chatInput.value = '';
+                    chatInput.disabled = true;
+                    document.querySelector('#gpt-button').disabled = true;
+                    // Added this line to clear the session on the server side
+                    fetch("/quit", {
+                        method: "POST"
+                    }).then(() => {
+                        // Session cleared, you can handle additional logic here if needed
+                    });
+                    return; // Exit the function early
+                }
+                //if question == 'practice' ==>  display hard coded databases
+                
+                //user asks question
+                addMessage(question, true);
+                //send message
+                fetch("/callapi", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ prompt: question })
+                })
+                    .then(response => {
+                        if (!response.ok) {  // Check if the response status is not in the 200-299 range
+                            return response.json().then(data => {
+                                throw new Error(data.error || "Unknown error occurred.");
+                            });
+                        }
+                    return response.json();
+                    })
+                    .then(data => {
+                        hideLoadingIndicator();
+                        addMessage(data.answer, false);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching response:", error);
+                        addMessage("Failed to get a response. Please try again.", false);
+                    });
+            }
+            chatInput.value = '';
+        }
+
+        
+
+        
+
+        //Event listeners for the button click or enter key press
+
+        document.querySelector('#gpt-button').addEventListener('click', askSQLWizard);
+        chatInput.addEventListener('keydown', function (event) {
+            if (event.keyCode === 13) { // Check if the key code is 13 (Enter key)
+                event.preventDefault(); // Prevent the default action (like form submission)
+                askSQLWizard();
+            }
+        });
+
+
+        //function to put message in the chat history
+
+        function addMessage(message, isUser) {
+            const messageType = isUser ? 'user-message' : 'bot-message';
+            const logoURL = isUser ? "{{ url_for('static', filename='user.png') }}" : "https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png";
+            // Check if the content has code block
+            const hasCodeBlock = message.includes("```");
+            let formattedMessage = message;
+
+            if (hasCodeBlock) {
+                formattedMessage = formatBotResponse(message);
+            }
+
+            let html_data = `
+                 <div class="list-group-item d-flex gap-3 py-3 ${messageType}">
+                    <img src="${logoURL}" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
+                        <div class="d-flex gap-2 w-100 justify-content-between">
+                            <div>
+                                <p class="mb-0 opacity-75">${formattedMessage}</p>
+                            </div>
+                        </div>
+                </div   >
+            `;
+            
+            document.querySelector('#list-group').insertAdjacentHTML('beforeend', html_data);
+
+            //create an empty messages array, keep on appending the user and bot messages, and pass the messages array as a prompt
+            // if isUser is true, append to the role user message, else append to role assistant message
+        }
+
+
+        //function to format any SQL code 
+
+
+        function formatBotResponse(content) {
+            content = content.replace(/• /g, '<br>• ');
+            // Detect and format SQL queries
+            // const sqlPattern = /(SELECT|UPDATE|DELETE|INSERT INTO|CREATE TABLE|DROP TABLE|ALTER TABLE)[^;]*;/gi;
+            // const matches = content.match(sqlPattern);
+            // if (matches) {
+            //     matches.forEach(match => {
+            //         content = content.replace(match, `</p><div class="sql-query-block">${match}</div><p>`);
+            //     });
+            // }
+            content = content.replace(/```([\s\S]+?)```/g, '</p><br><pre><code>$1</code></pre><br><p>');
+            return content;
+        }
+
+        //Function to show loading indicator
+        function showLoadingIndicator() {
+            document.getElementById('loading-indicator').style.display = 'block';
+        }
+
+        // Function to hide loading indicator
+        function hideLoadingIndicator() {
+            document.getElementById('loading-indicator').style.display = 'none';
+        }
+
+        // Added this function to run on page load to clear the session
+        window.onload = function() {
+            fetch("/quit", {
+                method: "POST"
+            }).then(() => {
+                // Session cleared, you can handle additional logic here if needed
+            });
+};
+    </script>
+
+</body>
+
+</html>
