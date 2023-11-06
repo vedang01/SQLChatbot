@@ -43,8 +43,15 @@
                 <img src="https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
                 <div class="d-flex gap-2 w-100 justify-content-between">
                     <div>
-                        <p class="mb-0 opacity-75">Hello! I am SQLWizard, and I am here to help you on any SQL-related queries.
-                            Once finished, you may type 'quit' to end the session.
+                        <p class="mb-0 opacity-75">Hello! I am SQLWizard, and I am here to help you on any SQL-related queries.<br>
+                             Some helpful tips for working with your friendly SQLWizard:
+                            -Ask me any question you'd like, anytime!<br>
+                            -Refrain from asking anything that's not SQL-related- I invested all my time learning SQL for you!<br>
+                            -I have some sample databases that we can make queries on, but if you'd like, you can enter your own database by copying and pasting it onto the prompt window! I can also make a random database for you, just let me know what kind of database you'd like to work on <br>
+                            -“Take test” is an awesome feature - you can test your SQL knowledge on a topic, and your score will be registered. You can take tests on the same topic as many times as you like, and see how well you're performing through a graph.<br>
+                            -If the questions are too hard(or too easy), just let me know! We all start somewhere.<br>
+                            -If you'd like to log off, type 'quit' in the chat. We'll continue from where we left off!<br>
+
                         </p>
                     </div>
                 </div>
@@ -110,6 +117,31 @@
                 //user asks question
                 addMessage(question, true);
                 //send message
+
+                //before sending to API, make sure user question/answer is SQL-related
+                
+                fetch("/SQLclassifier", {
+                method: "POST",
+                headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ prompt: question })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.classifier_failed){
+                        addMessage("There was an error processing your question. Please try again.", false);
+                        hideLoadingIndicator();
+                        return; 
+                    }
+                    if (!data.is_sql) {
+                        // If the response indicates the question is not related to SQL
+                        addMessage("Please ask questions related to SQL.", false);
+                        hideLoadingIndicator();
+                        return; 
+                    }
+                    else{
+                    // sql related question
                 fetch("/callapi", {
                     method: "POST",
                     headers: {
@@ -133,6 +165,15 @@
                         console.error("Error fetching response:", error);
                         addMessage("Failed to get a response. Please try again.", false);
                     });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error checking SQL-related:", error);
+                    addMessage("There was an error processing your request: ${error}", false);
+                });
+                
+                
+                
             }
             chatInput.value = '';
         }
@@ -188,14 +229,7 @@
 
         function formatBotResponse(content) {
             content = content.replace(/• /g, '<br>• ');
-            // Detect and format SQL queries
-            // const sqlPattern = /(SELECT|UPDATE|DELETE|INSERT INTO|CREATE TABLE|DROP TABLE|ALTER TABLE)[^;]*;/gi;
-            // const matches = content.match(sqlPattern);
-            // if (matches) {
-            //     matches.forEach(match => {
-            //         content = content.replace(match, `</p><div class="sql-query-block">${match}</div><p>`);
-            //     });
-            // }
+            
             content = content.replace(/```([\s\S]+?)```/g, '</p><br><pre><code>$1</code></pre><br><p>');
             return content;
         }
@@ -210,14 +244,14 @@
             document.getElementById('loading-indicator').style.display = 'none';
         }
 
-        // Added this function to run on page load to clear the session
-        window.onload = function() {
-            fetch("/quit", {
-                method: "POST"
-            }).then(() => {
-                // Session cleared, you can handle additional logic here if needed
-            });
-};
+        // // Added this function to run on page load to clear the session
+        // window.onload = function() {
+        //     fetch("/quit", {
+        //         method: "POST"
+        //     }).then(() => {
+        //         // Session cleared, you can handle additional logic here if needed
+        //     });
+        // };
     </script>
 
 </body>

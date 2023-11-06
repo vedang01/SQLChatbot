@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<style>
+
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f2f2f2;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 110vh;
+}
+
+.form-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  width: 500px;
+  padding: 40px 50px 0px 30px;
+  text-align: center;
+}
+
+h2 {
+  margin: 0 0 20px;
+  color: #333;
+}
+
+.input-field {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+.input-field::placeholder {
+  color: #999;
+}
+
+.submit-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+  margin: 20px 0px 6px 9px;
+
+}
+
+.submit-button:hover {
+  background-color: #0056b3;
+}
+
+a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+p {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+@media (max-width: 400px) {
+  .form-container {
+    width: 90%;
+  }
+}
+
+</style>
+
+<head>
+  <title>Register for SQL Wizard</title>
+  <!-- <link rel="stylesheet" type="text/css" href="styles.css"> -->
+</head>
+<body>
+  <div class="form-container">
+    <div id="message" class="message-container"></div> 
+    <h2>Sign Up</h2>
+    <form id="signup-form">
+        <label class="radio-label">First Name: </label>
+        <input type="text" placeholder="First Name" name = "first_name" class="input-field" required>
+        <label class="radio-label">Last Name: </label>
+        <input type="text" placeholder="Last Name" name = "last_name" class="input-field">
+        <label class="radio-label">Age: </label>
+        <input type="number" placeholder="Age" name = "age" class="input-field" required>
+        <label class="radio-label">Username:</label>
+        <input type="text" placeholder="Username" name = "username" class="input-field" required>
+        <label class="radio-label">Password:</label>
+        <input type="password" placeholder="Password" name = "password" class="input-field" required>
+        <label class="radio-label">Confirm Password:</label>
+        <input type="password" placeholder="Confirm Password" name = "confirm_password" class="input-field" required>
+        <label class="radio-label">Profession:</label>
+        <input type="text" placeholder="Profession" name = "profession" class="input-field" required>
+        
+        <div class="radio-group">
+          <label class="radio-label">Proficiency:<br></label>
+          <input type="radio" name="proficiency" value="beginner" class="radio-input">
+          <label class="radio-label">Beginner</label>
+          <input type="radio" name="proficiency" value="intermediate" class="radio-input">
+          <label class="radio-label">Intermediate</label>
+          <input type="radio" name="proficiency" value="advanced" class="radio-input">
+          <label class="radio-label">Advanced</label>
+        </div>
+        <button type="submit" class="submit-button">Sign Up</button>
+      </form>
+    <p>Already have an account? <a href="/login">Sign In</a></p>
+  </div>
+
+  <script>
+    document.getElementById('signup-form').addEventListener('submit', function(event) {
+      event.preventDefault(); 
+      const formData = new FormData(this);
+      const formDataJSON = {};
+  
+      formData.forEach((value, key) => {
+        formDataJSON[key] = value.trim();
+      });
+  
+        // Simple client-side validation for password match
+     if (formDataJSON.password !== formDataJSON.confirm_password) {
+                showErrorMessage('Passwords do not match.');
+                return;
+            }
+                // Check if age is a positive integer
+     if (!Number.isInteger(+formDataJSON.age) || +formDataJSON.age <= 0) {
+     showErrorMessage('Please enter a valid positive integer for age.');
+     return;
+    }
+      
+     // Check if first name or last name contain numbers
+     if (/\d/.test(formDataJSON.first_name) || /\d/.test(formDataJSON.last_name)) {
+     showErrorMessage('Names cannot contain numbers.');
+     return;
+    }
+
+    fetch("/register", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formDataJSON)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Redirect to login page or directly log the user in as you prefer
+                    showSuccessMessage('You are registered successfully!');
+
+                    setTimeout(function() {
+                        localStorage.setItem('username', formDataJSON.username);
+                        window.location.href = '/';
+
+                    }, 3000);
+                } else {
+                    showErrorMessage(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+  
+    function showErrorMessage(message) {
+            const messageContainer = document.getElementById('message');
+            if (messageContainer) {
+                messageContainer.innerHTML = `<p class="error-message">${message}</p>`;
+            } else {
+                console.error("The message container doesn't exist.");
+            }
+        }
+    function showSuccessMessage(message) {
+            const messageContainer = document.getElementById('message');
+            if (messageContainer) {
+                messageContainer.innerHTML = `<p class="success-message">${message}</p>`;
+            } else {
+                console.error("The message container doesn't exist.");
+            }
+        }
+
+    
+  </script>
+
+</body>
+</html>
