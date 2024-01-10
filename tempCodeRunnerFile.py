@@ -4,7 +4,6 @@ import openai
 from flask_cors import CORS
 import os
 import mysql.connector
-from mysql.connector import Error
 
 
 db_password = os.getenv("DB_PASSWORD")
@@ -87,6 +86,10 @@ def isSQLrelated(prompt):
         answer = "SQL classifier failed"
 
     return answer
+
+
+import mysql.connector
+from mysql.connector import Error
 
 
 def fetch_topics():

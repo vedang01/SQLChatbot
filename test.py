@@ -5,7 +5,6 @@ db_password = os.getenv("DB_PASSWORD")
 
 
 try:
-    # Replace 'hostname', 'user', 'password', and 'database' with your details
     connection = mysql.connector.connect(
         host="localhost", user="root", password=db_password, database="sqlwizard"
     )
