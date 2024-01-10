@@ -32,15 +32,19 @@ conversation_history = [
 
 
 # Separate function for GPT-3 response
-def generateChatResponse(prompt):
+def generateChatResponse(prompt, topic=""):
     # Retrieve user's personal details from session
     first_name = session.get("firstname")
     age = session.get("age")
     profession = session.get("profession")
     proficiency = session.get("proficiency")
 
-    # Personalize the prompt with the user's details
-    personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}"
+    # If user wants to learn about a specific topic
+    if topic:
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Give a brief summary along with an example."
+    else:
+        # Personalize the prompt with the user's details
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}"
 
     # Include the personalized prompt in the conversation history
     session["conversation_history"].append(
@@ -122,6 +126,47 @@ def fetch_topics():
             print("MySQL connection is closed")
 
     return topics
+
+
+def fetch_all_topics_from_db():
+    topics = []
+    try:
+        # Establishing the database connection
+        connection = mysql.connector.connect(
+            host="localhost", database="sqlwizard", user="root", password=db_password
+        )
+
+        # Check if connection was successful
+        if connection.is_connected():
+            cursor = connection.cursor()
+
+            query = "SELECT DISTINCT concept FROM concepts order by score desc"
+
+            cursor.execute(query)
+
+            # Fetch all the resulting rows
+            result = cursor.fetchall()
+
+            # Process the fetched data
+            topics = [item[0] for item in result]
+
+            cursor.close()
+
+    except Error as e:
+        print("Error while connecting to MySQL", e)
+    finally:
+        # Closing the database connection
+        if connection.is_connected():
+            connection.close()
+            print("MySQL connection is closed")
+
+    return topics
+
+
+@app.route("/fetch_all_topics")
+def fetch_all_topics():
+    topics = fetch_all_topics_from_db()
+    return jsonify(topics)
 
 
 # Root endpoint to serve the frontend HTML
@@ -378,7 +423,7 @@ def login():
 @app.route("/home")
 def home():
     if "loggedin" in session and session["loggedin"]:
-        return render_template("index.html")
+        return render_template("index.html", show_options=True)
     else:
         # Redirect to the login page
         return redirect(url_for("login"))
@@ -388,6 +433,131 @@ def home():
 def quit():
     session.clear()
     return jsonify({"status": "Session cleared"}), 200
+
+
+@app.route("/learn_topic", methods=["POST"])
+def learn_topic():
+    data = request.get_json()
+    topic = data["topic"]
+    # Call the modified generateChatResponse function with the topic
+    response = generateChatResponse("", topic=topic)
+    return jsonify({"response": response})
+
+
+@app.route("/submit_confidence_score", methods=["POST"])
+def submit_confidence_score():
+    data = request.get_json()
+    topic = data.get("topic")
+    score = int(data.get("score"))
+    username = session.get("username")
+
+    # Add logic to insert the confidence score into the database
+    try:
+        # Establishing the database connection
+        connection = mysql.connector.connect(
+            host="localhost", database="sqlwizard", user="root", password=db_password
+        )
+
+        # Check if connection was successful
+        if connection.is_connected():
+            cursor = connection.cursor()
+            query = "SELECT UserID FROM users WHERE username = %s"
+            # Check if the username already exists
+            cursor.execute(query, (username,))
+            result = cursor.fetchone()
+            user_id = result[0]
+
+            cursor.execute(
+                "SELECT ConceptID FROM concepts WHERE Concept = %s", (topic,)
+            )
+            concept_id = cursor.fetchone()[0]
+
+            # print(f"ConceptID: {concept_id}, Topic: {topic}")
+            # concept ID is fine
+
+            # Prepare the insert statement
+            insert_stmt = (
+                "INSERT INTO user_confidence (UserID, ConceptID, Concept, Confidence) "
+                "VALUES (%s, %s, %s, %s) "
+                "ON DUPLICATE KEY UPDATE Confidence = VALUES(Confidence)"
+            )
+            data_tuple = (user_id, concept_id, topic, score)
+            cursor.execute(insert_stmt, data_tuple)
+            connection.commit()
+
+            return jsonify({"message": "Confidence score submitted successfully"}), 200
+    except mysql.connector.Error as e:
+        print("Error while connecting to MySQL", e)
+        return jsonify({"message": "Failed to submit confidence score"}), 500
+    finally:
+        # Closing the database connection
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+    # If user_id is not in session, or any other issue
+    return jsonify({"message": "Failed to submit confidence score"}), 400
+
+
+@app.route("/suggested_topics")
+def suggested_topics():
+    username = session.get("username")
+    try:
+        connection = mysql.connector.connect(
+            host="localhost", database="sqlwizard", user="root", password=db_password
+        )
+
+        if connection.is_connected():
+            cursor = connection.cursor()
+
+            # Get the user ID based on the username
+            cursor.execute("SELECT UserID FROM users WHERE Username = %s", (username,))
+            user_id_result = cursor.fetchone()
+            if user_id_result:
+                user_id = user_id_result[0]
+
+                # Get the concepts where the user's confidence score is null or less than 3
+                cursor.execute(
+                    """
+                    SELECT c.Concept 
+                    FROM concepts AS c
+                    LEFT JOIN user_confidence AS uc ON c.ConceptID = uc.ConceptID AND uc.UserID = %s
+                    WHERE uc.Confidence IS NULL OR uc.Confidence < 3
+                    """,
+                    (user_id,),
+                )
+                low_confidence_concepts = [row[0] for row in cursor.fetchall()]
+
+                # Get the next topics based on high confidence as prerequisite
+                cursor.execute(
+                    """
+                    SELECT c.Concept 
+                    FROM concepts AS c
+                    INNER JOIN user_confidence AS uc ON c.Prerequisite = uc.ConceptID
+                    WHERE uc.UserID = %s AND uc.Confidence >= 3
+                    LIMIT 3
+                    """,
+                    (user_id,),
+                )
+                high_confidence_next_topics = [row[0] for row in cursor.fetchall()]
+
+                # Combine both lists, ensuring no duplicates and limiting to 3
+                suggested_topics = list(
+                    set(low_confidence_concepts + high_confidence_next_topics)
+                )[:3]
+                return jsonify(suggested_topics)
+            else:
+                return jsonify({"message": "User not found"}), 404
+
+    except mysql.connector.Error as e:
+        print("Error while connecting to MySQL", e)
+        return jsonify({"message": "Failed to fetch suggested topics"}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+    return jsonify({"message": "No suggestions available"}), 404
 
 
 @app.route("/practice")

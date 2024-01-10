@@ -28,6 +28,24 @@
             border-radius: 4px;
             font-family: "Courier New", monospace;
         }
+        .suggested-topic {
+            cursor: pointer;
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 12px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            background-color: #f2f2f2;
+            color: #007bff;
+            text-align: center;
+        }
+
+        .suggested-topic:hover {
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+        }
+
 
 
     </style>
@@ -37,6 +55,29 @@
     <div class="container mt-5">
         <!-- Adding the SQL Wizard heading -->
         <h1 style="color:black; text-align:center">SQL Wizard</h1>
+        <!-- This section is toggled based on the 'show_options' variable -->
+        {% if show_options %}
+        <div id="user-preferences">
+            <h3>Welcome, {{ session['firstname'] }}! What would you like to do today?</h3>
+            <select id="user-choice">
+                <option value="" disabled selected>Select your option</option>
+                <option value="select_topic">Learn about a specific topic</option>
+                <option value="doubt_clearing">Use SQL Wizard for doubt clearing</option>
+            </select>
+            <button onclick="handleUserChoice()">Submit</button>
+        </div>
+        <div id="topic-selection" style="display:none;">
+            <select id="topic-dropdown">
+                <!-- Topics will be populated here -->
+            </select>
+            <div id="suggestions-div">
+                <!-- Suggested topics will be populated here -->
+            </div>
+
+            <button onclick="submitTopic()">Submit</button>
+        </div>
+        {% endif %}
+        
         <div id="list-group" class="list-group w-auto mt-3">
             <div class="list-group-item d-flex gap-3 py-3 bot-message">
                 <img src="https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
@@ -63,6 +104,17 @@
         <div class="practice-button-container">
             <a href="\practice" class="btn btn-primary">Practice SQL</a>
         </div>
+
+        <!-- Add a Finish Topic button and a hidden form for confidence score submission -->
+        <div id="finish-topic-container" style="display:none;">
+            <button id="finish-topic-btn" class="btn btn-primary">Finish Topic</button>
+            <div id="confidence-form" style="display:none;">
+                <label for="confidence-score">How confident are you in this topic? (1-5)</label>
+                <input type="number" id="confidence-score" min="1" max="5" required>
+                <button onclick="submitConfidenceScore()">Submit Confidence Score</button>
+            </div>
+        </div>
+
 
         <div id="loading-indicator" style="display: none;">
             <div class="spinner-border text-primary" role="status">
@@ -98,12 +150,16 @@
                     hideLoadingIndicator();
                     addMessage(question, true);
 
+
                     addMessage("Hope today's session was productive!", false);
         
                     // disable the chat input and button to end the session
                     chatInput.value = '';
                     chatInput.disabled = true;
                     document.querySelector('#gpt-button').disabled = true;
+                    document.getElementById('finish-topic-container').style.display = 'none';
+
+
                     // Added this line to clear the session on the server side
                     fetch("/quit", {
                         method: "POST"
@@ -179,7 +235,165 @@
 
         
 
+        function fetchAndDisplayTopics() {
+            fetch("/fetch_all_topics")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(topics => {
+                const topicSelect = document.getElementById("topic-dropdown");
+                topicSelect.innerHTML = ''; // Clear any existing options
+                topics.forEach(topic => {
+                    let option = new Option(topic, topic);
+                    topicSelect.add(option);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function handleUserChoice() {
+            const choice = document.getElementById("user-choice").value;
+            const userPreferences = document.getElementById("user-preferences");
+
+            const topicSelectionDiv = document.getElementById("topic-selection");
+            const chatInput = document.getElementById('chat-input');
+
+            switch (choice) {
+                case "select_topic":
+                    chatInput.disabled = true; // Disable chat input until a topic is submitted
+                    topicSelectionDiv.style.display = 'block';
+                    
+                    fetchAndDisplayTopics();
+                    displaySuggestedTopics();
+                    break;
+                case "doubt_clearing":
+                    // Continue with the normal chatbot flow
+                    clearChat();
+                    userPreferences.style.display = 'none';
+                    chatInput.disabled = false;
+                    break;
+                default:
+                    console.error('Invalid choice');
+            }
+        }
         
+        function clearChat() {
+            // Clear the chat history or reset the environment for doubt clearing
+            const listGroup = document.getElementById('list-group');
+            listGroup.innerHTML = ''; // This will remove all child elements in the chat history
+        }
+
+        function submitTopic() {
+            const selectedTopic = document.getElementById("topic-dropdown").value;
+            if(selectedTopic){
+                showLoadingIndicator();
+                clearChat();
+                // Hide the user preferences and topic selection while loading
+                document.getElementById('user-preferences').style.display = 'none';
+                document.getElementById('topic-selection').style.display = 'none';
+                document.getElementById('finish-topic-container').style.display = 'none'; // Initially hide the Finish Topic button
+
+
+                fetch("/learn_topic", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topic: selectedTopic })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoadingIndicator(); // Hide loading indicator when the response is received
+                    addMessage(data.response, false);
+                    document.getElementById('chat-input').disabled = false; // Re-enable chat input
+                    document.getElementById('finish-topic-container').style.display = 'block'; // Show the Finish Topic button
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Show the user preferences and topic selection again if there was an error
+                    document.getElementById('user-preferences').style.display = 'block';
+                    document.getElementById('topic-selection').style.display = 'block';
+                });
+            }
+            else{
+                // ask user to select topic
+                alert("Please select a topic first.");
+                hideLoadingIndicator();
+
+
+            }
+            // Add logic to send the selected topic to the backend and get the response
+        }
+
+        // Submitting confidence score after finishing topic
+        function submitConfidenceScore() {
+            const confidenceScore = document.getElementById('confidence-score').value;
+            const selectedTopic = document.getElementById("topic-dropdown").value;            
+            if (confidenceScore) {
+                // Send the confidence score to the backend
+                fetch("/submit_confidence_score", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ topic: selectedTopic, score: confidenceScore })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Handle the response from the server
+                    console.log(data);
+                    // Reset the form and re-enable the user preferences for next topic selection
+                    displaySuggestedTopics();
+                    document.getElementById('confidence-form').style.display = 'none';
+                    document.getElementById('user-preferences').style.display = 'block';
+                    document.getElementById('topic-selection').style.display = 'none';
+
+                    document.getElementById('chat-input').disabled = true; // Keep chat input disabled until a new selection is made
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+
+        function displaySuggestedTopics() {
+            fetch("/suggested_topics")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const suggestionsDiv = document.getElementById("suggestions-div");
+                suggestionsDiv.innerHTML = '<strong>Suggested Topics: </strong>'; // Clear existing suggestions
+                for (let key in data) {
+                    let topic = data[key];
+                    let suggestion = document.createElement("div");
+                    suggestion.className = "suggested-topic";
+                    suggestion.textContent = topic;
+                    suggestion.onclick = function() { selectTopic(topic); };
+                    suggestionsDiv.appendChild(suggestion);
+                }
+            })
+            .catch(error => console.error('Error fetching suggested topics:', error));
+        }
+
+        function selectTopic(topic) {
+            // Set the topic in the dropdown to the selected suggested topic
+            const topicDropdown = document.getElementById("topic-dropdown");
+            topicDropdown.value = topic;
+            // Call submitTopic as if the user selected the topic from the dropdown and submitted
+            submitTopic();
+        }
+
+
 
         //Event listeners for the button click or enter key press
 
@@ -189,6 +403,14 @@
                 event.preventDefault(); // Prevent the default action (like form submission)
                 askSQLWizard();
             }
+        });
+        document.getElementById('finish-topic-btn').addEventListener('click', function() {
+        const finishTopicContainer = document.getElementById('finish-topic-container');
+        const confidenceForm = document.getElementById('confidence-form');
+        
+        // Show the form to submit the confidence score
+        finishTopicContainer.style.display = 'inline-block';
+        confidenceForm.style.display = 'block';
         });
 
 
@@ -242,6 +464,10 @@
         function hideLoadingIndicator() {
             document.getElementById('loading-indicator').style.display = 'none';
         }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('chat-input').disabled = true;
+        });
+
 
         // // Added this function to run on page load to clear the session
         // window.onload = function() {
