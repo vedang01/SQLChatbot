@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Head contents -->
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Sandbox Mode</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/a11y-dark.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
+    <style>
+        #sql-query { 
+            width: 100%;
+            min-height: 150px;
+            margin-bottom: 10px;
+        }
+        .dataTables_wrapper {
+            margin-top: 20px;
+        }
+        .query-results-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body class = "bg-light">
+    <h1 class="text-center mb-3">Sandbox Mode</h1>
+    <p class="text-center">Welcome to Sandbox! Below are three tables for practice. You may execute READONLY queries on these tables and see the output.</p>
+
+
+    
+    {% for table_name, table_info in tables_data.items() %}
+        <h3>{{ table_name }}</h3>
+        <table id="{{ table_name }}-table" class="display">
+            <thead>
+                <tr>
+                    {% for column in table_info.columns %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table_info.rows %}
+                    <tr>
+                        {% for cell in row %}
+                            <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+
+    <textarea id="sql-query" class="form-control" placeholder="Enter your SQL query here"></textarea>
+    <button onclick="executeQuery()" class="btn btn-primary mt-2">Run Query</button>
+    <div id="query-results" class="query-results-container"></div>
+
+    <script>
+          $(document).ready(function() {
+            // Initialize DataTables for each table
+            $('#students-table').DataTable();
+            $('#courses-table').DataTable();
+            $('#enrollments-table').DataTable();
+            window.resultTable = $('#result-table').DataTable();
+
+        });
+        function executeQuery() {
+            const query = document.getElementById("sql-query").value;
+            document.getElementById("query-results").innerHTML = '';
+            fetch("/sandbox", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({ "query": query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    // Display error
+                    document.getElementById("query-results").innerText = "Error: " + data.error;
+                } else {
+                    // Format and display data
+                    $(document.getElementById("query-results")).html('<table id="result-table" class="display table table-striped table-bordered"></table>');
+
+                    // const formattedResults = formatResults(data);
+                    // document.getElementById("query-results").innerHTML = formattedResults;
+                    window.resultTable = $('#result-table').DataTable({
+                        data: data,
+                        columns: Object.keys(data[0]).map(function(col) {
+                            return { title: col };
+                        })
+                    
+                    });
+                
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function formatResults(data) {
+            let html = '<table><thead><tr>';
+            // Assuming the first row contains column headers
+            for (const header of Object.keys(data[0])) {
+                html += `<th>${header}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            for (const row of data) {
+                html += '<tr>';
+                for (const cell of Object.values(row)) {
+                    html += `<td>${cell}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            return html;
+        }
+
+    </script>
+</body>
+</html>

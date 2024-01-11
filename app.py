@@ -631,9 +631,67 @@ def get_previous_score():
     return jsonify({"score": previous_score or "Test not taken yet"})
 
 
+def get_table_data():
+    tables = [
+        "students",
+        "courses",
+        "enrollments",
+    ]  # Replace with your actual table names
+    data = {}
+    connection = mysql.connector.connect(
+        host="localhost",
+        database="sandbox",
+        user="readonly_user",
+        password="sandbox789",
+    )
+    if connection is None:
+        return None
+    try:
+        cursor = connection.cursor()
+        for table in tables:
+            cursor.execute(f"SELECT * FROM {table}")
+            columns = [desc[0] for desc in cursor.description]
+            data[table] = {"columns": columns, "rows": cursor.fetchall()}
+    except Exception as e:
+        print(f"Error fetching table data: {e}")
+        return None
+    finally:
+        connection.close()
+    return data
+
+
 @app.route("/sandbox", methods=["GET", "POST"])
 def sandbox():
-    pass
+    if request.method == "POST":
+        query = request.form["query"]
+        try:
+            # Assume get_sandbox_connection() returns a read-only DB connection
+            connection = mysql.connector.connect(
+                host="localhost",
+                database="sandbox",
+                user="readonly_user",
+                password="sandbox789",
+            )
+            if connection is None:
+                return jsonify({"error": "Database connection failed"}), 500
+            cursor = connection.cursor()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            return jsonify(results)
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+        finally:
+            if connection.is_connected():
+                connection.close()
+
+    else:
+        # Render the sandbox HTML page
+
+        tables_data = get_table_data()
+        if tables_data is None:
+            return "Error fetching table data", 500
+        return render_template("sandbox.html", tables_data=tables_data)
 
 
 ##this is for running SQL queries against a live database
