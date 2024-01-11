@@ -93,41 +93,6 @@ def isSQLrelated(prompt):
     return answer
 
 
-def fetch_topics():
-    topics = []
-    try:
-        # Establishing the database connection
-        connection = mysql.connector.connect(
-            host="localhost", database="sqlwizard", user="root", password=db_password
-        )
-
-        # Check if connection was successful
-        if connection.is_connected():
-            cursor = connection.cursor()
-
-            query = "SELECT DISTINCT concept FROM concepts WHERE readonly=1"
-
-            cursor.execute(query)
-
-            # Fetch all the resulting rows
-            result = cursor.fetchall()
-
-            # Process the fetched data
-            topics = [item[0] for item in result]
-
-            cursor.close()
-
-    except Error as e:
-        print("Error while connecting to MySQL", e)
-    finally:
-        # Closing the database connection
-        if connection.is_connected():
-            connection.close()
-            print("MySQL connection is closed")
-
-    return topics
-
-
 def fetch_all_topics_from_db():
     topics = []
     try:
@@ -212,7 +177,7 @@ def SQLclassifier():
         return jsonify(res), 500  # Sending a 500 Internal Server Error status
 
 
-# Future routes for user authentication
+# User registration
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "GET":
@@ -336,6 +301,7 @@ def register():
             )
 
 
+# User Login
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
@@ -420,6 +386,7 @@ def login():
             )
 
 
+# Home Page
 @app.route("/home")
 def home():
     if "loggedin" in session and session["loggedin"]:
@@ -429,12 +396,14 @@ def home():
         return redirect(url_for("login"))
 
 
+# Quit functionality
 @app.route("/quit", methods=["POST"])
 def quit():
     session.clear()
     return jsonify({"status": "Session cleared"}), 200
 
 
+# After selecting topic to learn, generate a basic overview
 @app.route("/learn_topic", methods=["POST"])
 def learn_topic():
     data = request.get_json()
@@ -444,6 +413,7 @@ def learn_topic():
     return jsonify({"response": response})
 
 
+# After finishing topic, submit confidence score to user_confidence table
 @app.route("/submit_confidence_score", methods=["POST"])
 def submit_confidence_score():
     data = request.get_json()
@@ -499,6 +469,7 @@ def submit_confidence_score():
     return jsonify({"message": "Failed to submit confidence score"}), 400
 
 
+# Display suggested topics
 @app.route("/suggested_topics")
 def suggested_topics():
     username = session.get("username")
@@ -560,37 +531,7 @@ def suggested_topics():
     return jsonify({"message": "No suggestions available"}), 404
 
 
-@app.route("/practice")
-def practice():
-    ##Fetch topics from database which are readonly
-    topics = fetch_topics()
-    return render_template("practice.html", topics=topics)
-
-
-@app.route("/start_test", methods=["POST"])
-def start_test():
-    selected_topic = request.form.get("topic")
-    selected_difficulty = request.form.get("difficulty")
-
-    # use selected_topic and selected_difficulty to determine which questions to present to the user
-
-    return redirect(
-        url_for("test", topic=selected_topic, difficulty=selected_difficulty)
-    )
-
-
-@app.route("/test", methods=["GET", "POST"])
-def test():
-    if request.method == "POST":
-        # ... process the user's answers ...
-        # ... interact with the database and GPT model ...
-        # ... provide feedback or scoring ...
-        ##else:
-        # ... set up the test page based on the topic and difficulty ...
-        ##return render_template("test.html", ...)
-        return render_template("test.html")
-
-
+# Get previous Score in test
 @app.route("/get_previous_score")
 def get_previous_score():
     topic = request.args.get("topic")
@@ -631,12 +572,13 @@ def get_previous_score():
     return jsonify({"score": previous_score or "Test not taken yet"})
 
 
+# Fetch Live Database data
 def get_table_data():
     tables = [
         "students",
         "courses",
         "enrollments",
-    ]  # Replace with your actual table names
+    ]
     data = {}
     connection = mysql.connector.connect(
         host="localhost",
@@ -660,12 +602,12 @@ def get_table_data():
     return data
 
 
+# Route for sandbox mode
 @app.route("/sandbox", methods=["GET", "POST"])
 def sandbox():
     if request.method == "POST":
         query = request.form["query"]
         try:
-            # Assume get_sandbox_connection() returns a read-only DB connection
             connection = mysql.connector.connect(
                 host="localhost",
                 database="sandbox",
@@ -693,8 +635,6 @@ def sandbox():
             return "Error fetching table data", 500
         return render_template("sandbox.html", tables_data=tables_data)
 
-
-##this is for running SQL queries against a live database
 
 if __name__ == "__main__":
     app.run(port="5500", debug=True)
