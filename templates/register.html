@@ -104,9 +104,11 @@ p {
         <input type="password" placeholder="Confirm Password" name = "confirm_password" class="input-field" required>
         <label class="radio-label">Profession:</label>
         <input type="text" placeholder="Profession" name = "profession" class="input-field" required>
+        <label class="radio-label">Why do you want to learn SQL?</label>
+        <input type="text" placeholder="Reason" name = "reason" class="input-field" required>
         
         <div class="radio-group">
-          <label class="radio-label">Proficiency:<br></label>
+          <label class="radio-label">SQL Proficiency:<br></label>
           <input type="radio" name="proficiency" value="beginner" class="radio-input">
           <label class="radio-label">Beginner</label>
           <input type="radio" name="proficiency" value="intermediate" class="radio-input">
@@ -120,13 +122,14 @@ p {
   </div>
 
   <script>
+
     document.getElementById('signup-form').addEventListener('submit', function(event) {
       event.preventDefault(); 
       const formData = new FormData(this);
       const formDataJSON = {};
   
       formData.forEach((value, key) => {
-        formDataJSON[key] = value.trim();
+    formDataJSON[key] = key === 'reason' ? value : value.trim();
       });
   
         // Simple client-side validation for password match
@@ -138,15 +141,15 @@ p {
      if (!Number.isInteger(+formDataJSON.age) || +formDataJSON.age <= 0) {
      showErrorMessage('Please enter a valid positive integer for age.');
      return;
-    }
+     }
       
      // Check if first name or last name contain numbers
      if (/\d/.test(formDataJSON.first_name) || /\d/.test(formDataJSON.last_name)) {
      showErrorMessage('Names cannot contain numbers.');
      return;
-    }
+     }
 
-    fetch("/register", {
+     fetch("/register", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -157,6 +160,7 @@ p {
                 if (!response.ok) {
                     return response.json().then(err => Promise.reject(err));
                 }
+                
                 return response.json();
             })
             .then(data => {

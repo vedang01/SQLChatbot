@@ -50,29 +50,23 @@ def callapi():
 # Future routes for user authentication
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    # Your registration logic here
     pass
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    # Your login logic here
     pass
 
 
 @app.route("/logout")
 def logout():
-    # Your logout logic here
     pass
 
 
 @app.route("/profile")
 def profile():
-    # Your profile handling logic here
     pass
 
-
-# ... Add other routes for SQL domain models, performance tracking, etc. ...
 
 if __name__ == "__main__":
     app.run(port="5500", debug=True)

@@ -62,7 +62,8 @@
             <select id="user-choice">
                 <option value="" disabled selected>Select your option</option>
                 <option value="select_topic">Learn about a specific topic</option>
-                <option value="doubt_clearing">Use SQL Wizard for doubt clearing</option>
+                <option value="doubt_clearing">Use SQLWizard to ask questions </option>
+                <option value="overview">Generate SQL overview (Recommended for Beginners)</option>
             </select>
             <button onclick="handleUserChoice()">Submit</button>
         </div>
@@ -70,6 +71,11 @@
             <select id="topic-dropdown">
                 <!-- Topics will be populated here -->
             </select>
+
+            <div id="prerequisite-div">
+                <!-- prerequisite topics will be populated here -->
+            </div> 
+
             <div id="suggestions-div">
                 <!-- Suggested topics will be populated here -->
             </div>
@@ -87,7 +93,6 @@
                             
                             -Ask me any question you'd like, anytime!<br>
                             -Refrain from asking anything that's not SQL-related- I invested all my time learning SQL for you!<br>
-                            -Type 'quit' to end session
                         </p>
                     </div>
                 </div>
@@ -102,8 +107,27 @@
         </div>
 
         <div class="practice-button-container">
-            <a href="\sandbox" class="btn btn-primary">Practice SQL</a>
+            <button id="practice-sql-button" class="btn btn-primary">Practice SQL</button>
         </div>
+
+
+        <div class="completed-topics-container">
+            <button id="completed-topics-button" class="btn btn-primary">Display Completed Topics</button>
+        </div>
+
+        <div class = "completed-topics-text-container">
+
+        </div>
+
+        <button id="view-progress-btn" class="btn btn-primary">View Progress</button>
+        
+    
+        <div class = "quit-container">
+            <button id="quit-button" class="btn btn-danger">Quit</button>
+        </div>
+
+        <!-- for rendering graph -->
+        <canvas id="progress-chart" width="400" height="50"></canvas> 
 
         <!-- Add a Finish Topic button and a hidden form for confidence score submission -->
         <div id="finish-topic-container" style="display:none;">
@@ -127,8 +151,12 @@
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
     <script>
+        let topic_exists = 0;
+
         setInterval(highlightAll, 1000);
         function highlightAll() {
             document.querySelectorAll("pre code").forEach(block => {
@@ -145,29 +173,7 @@
              const question = chatInput.value.trim();
     
             if (question) {
-                //if user wants to quit
-                if (question.toLowerCase() === 'quit') {
-                    hideLoadingIndicator();
-                    addMessage(question, true);
-
-
-                    addMessage("Hope today's session was productive!", false);
-        
-                    // disable the chat input and button to end the session
-                    chatInput.value = '';
-                    chatInput.disabled = true;
-                    document.querySelector('#gpt-button').disabled = true;
-                    document.getElementById('finish-topic-container').style.display = 'none';
-
-
-                    // Added this line to clear the session on the server side
-                    fetch("/quit", {
-                        method: "POST"
-                    }).then(() => {
-                        // Session cleared, you can handle additional logic here if needed
-                    });
-                    return; // Exit the function early
-                }
+                
                 
                 //user asks question
                 addMessage(question, true);
@@ -243,12 +249,21 @@
                 }
                 return response.json();
             })
-            .then(topics => {
+            .then(topicsByOperation => {
                 const topicSelect = document.getElementById("topic-dropdown");
                 topicSelect.innerHTML = ''; // Clear any existing options
-                topics.forEach(topic => {
-                    let option = new Option(topic, topic);
-                    topicSelect.add(option);
+                // Iterate over operations and create optgroups
+                Object.entries(topicsByOperation).forEach(([operation, topics]) => {
+                    let optgroup = document.createElement('optgroup');
+                    optgroup.label = operation;
+                    
+                    // Create options for each topic under this operation
+                    topics.forEach(topic => {
+                        let option = new Option(topic, topic);
+                        optgroup.appendChild(option);
+                    });
+                    
+                    topicSelect.appendChild(optgroup);
                 });
             })
             .catch(error => console.error('Error:', error));
@@ -265,19 +280,38 @@
                 case "select_topic":
                     chatInput.disabled = true; // Disable chat input until a topic is submitted
                     topicSelectionDiv.style.display = 'block';
-                    
                     fetchAndDisplayTopics();
                     displaySuggestedTopics();
                     break;
                 case "doubt_clearing":
                     // Continue with the normal chatbot flow
                     clearChat();
-                    userPreferences.style.display = 'none';
+                    addMessage("Ask an SQL-related question.", false)
+                    //userPreferences.style.display = 'none';
                     chatInput.disabled = false;
                     break;
+
+                case "overview": 
+                    clearChat();
+                    showLoadingIndicator();
+                    addMessage("Please wait while I generate an overview for you...");
+                    //userPreferences.style.display = 'none';
+                    
+                    chatInput.disabled = false;
+                    fetchOverview();
+                    hideLoadingIndicator();
+                    break;
+
                 default:
                     console.error('Invalid choice');
             }
+        }
+
+        function fetchOverview(){
+            fetch("/generate_sql_overview")
+            .then(response => response.json())
+            .then(data => addMessage(data.overview, false))
+            .catch(error => console.error('Error:', error));
         }
         
         function clearChat() {
@@ -291,6 +325,7 @@
             if(selectedTopic){
                 showLoadingIndicator();
                 clearChat();
+                addMessage("Please wait while I generate a summary for you ...")
                 // Hide the user preferences and topic selection while loading
                 document.getElementById('user-preferences').style.display = 'none';
                 document.getElementById('topic-selection').style.display = 'none';
@@ -355,7 +390,7 @@
                     document.getElementById('confidence-form').style.display = 'none';
                     document.getElementById('user-preferences').style.display = 'block';
                     document.getElementById('topic-selection').style.display = 'none';
-
+                    topic_exists = 1;
                     document.getElementById('chat-input').disabled = true; // Keep chat input disabled until a new selection is made
                 })
                 .catch(error => console.error('Error:', error));
@@ -363,7 +398,7 @@
         }
 
         function displaySuggestedTopics() {
-            fetch("/suggested_topics")
+            fetch("/suggested_topics") // Adjust this endpoint to your API that runs the query
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok: ' + response.statusText);
@@ -372,18 +407,41 @@
             })
             .then(data => {
                 const suggestionsDiv = document.getElementById("suggestions-div");
-                suggestionsDiv.innerHTML = '<strong>Suggested Topics: </strong>'; // Clear existing suggestions
-                for (let key in data) {
-                    let topic = data[key];
-                    let suggestion = document.createElement("div");
-                    suggestion.className = "suggested-topic";
-                    suggestion.textContent = topic;
-                    suggestion.onclick = function() { selectTopic(topic); };
-                    suggestionsDiv.appendChild(suggestion);
-                }
+                suggestionsDiv.innerHTML = '<strong>Suggested Topics: </strong><br>'; // Clear existing suggestions
+                
+                // Assuming `data` is an array of objects with `Concept` and `Operation Name` keys
+                const groupedByOperation = data.reduce((acc, topic) => {
+                    // Initialize the array if this operation hasn't been seen before
+                    if (!acc[topic['Operation Name']]) {
+                        acc[topic['Operation Name']] = [];
+                    }
+                    acc[topic['Operation Name']].push(topic.Concept);
+                    return acc;
+                }, {});
+
+                // Create a container for each operation
+                Object.entries(groupedByOperation).forEach(([operation, topics]) => {
+                    let operationDiv = document.createElement("div");
+                    operationDiv.className = "operation-group";
+                    let operationHeader = document.createElement("h4");
+                    operationHeader.textContent = operation;
+                    operationDiv.appendChild(operationHeader);
+
+                    // Add topics to the operation container
+                    topics.forEach(topic => {
+                        let topicDiv = document.createElement("div");
+                        topicDiv.className = "suggested-topic";
+                        topicDiv.textContent = topic;
+                        topicDiv.onclick = function() { selectTopic(topic); };
+                        operationDiv.appendChild(topicDiv);
+                    });
+
+                    suggestionsDiv.appendChild(operationDiv);
+                });
             })
             .catch(error => console.error('Error fetching suggested topics:', error));
         }
+
 
         function selectTopic(topic) {
             // Set the topic in the dropdown to the selected suggested topic
@@ -404,16 +462,141 @@
                 askSQLWizard();
             }
         });
+
+        document.getElementById('practice-sql-button').addEventListener('click', function() {
+            window.location.href = '/sandbox'; // Redirect to the sandbox page
+        });
+
+
+
+
         document.getElementById('finish-topic-btn').addEventListener('click', function() {
         const finishTopicContainer = document.getElementById('finish-topic-container');
         const confidenceForm = document.getElementById('confidence-form');
+
         
         // Show the form to submit the confidence score
         finishTopicContainer.style.display = 'inline-block';
         confidenceForm.style.display = 'block';
+
+        addMessage("Great Job! Try practicing what you learnt in Sandbox Mode.", false);
         });
 
 
+
+        document.getElementById("topic-dropdown").addEventListener("change", function() {
+            const selectedTopic = this.value;
+            fetchPrerequisite(selectedTopic);
+        });
+
+        function fetchPrerequisite(topic) {
+            fetch('/get_prerequisite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ topic: topic })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayPrerequisite(data.prerequisite);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function displayPrerequisite(prerequisite) {
+            const prerequisiteDiv = document.getElementById("prerequisite-div");
+            if(!prerequisite){
+                prerequisiteDiv.innerHTML = ``; //for SQL basics as topic
+            }
+            prerequisiteDiv.innerHTML = `<strong>Prerequisite: </strong>${prerequisite}`;
+        }
+
+        document.getElementById('view-progress-btn').addEventListener('click', function() {
+            fetch('/view_progress')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(graphData => {
+                    const ctx = document.getElementById('progress-chart').getContext('2d');
+                    const progressChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: graphData.operations,
+                            datasets: [{
+                                label: 'Total Topics',
+                                data: graphData.totalTopics,
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            }, {
+                                label: 'Completed Topics',
+                                data: graphData.completedTopics,
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            
+                            indexAxis: 'y', //horizontal bar
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        beginAtZero: true
+                                    }
+                                },
+                                // y: {
+                                // }
+                            },
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio:2
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+
+        
+
+       document.getElementById('quit-button').addEventListener('click', function() {
+                fetch("/quit", {
+                    method: "POST"
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const learnedTopics = data.learned_topics;
+                    // Disable all buttons
+                    const buttons = document.querySelectorAll('button');
+                    buttons.forEach(btn => {
+                        btn.disabled = true;
+                    });
+                    // Disable chat input and hide the button, or redirect as needed
+                    hideLoadingIndicator();
+                    chatInput.value = '';
+                    chatInput.disabled = true;
+                    document.getElementById('finish-topic-container').style.display = 'none';
+                    document.getElementById('gpt-button').disabled = true;
+                    document.getElementById('quit-button').style.display = 'none';
+                    let message = "Session ended. Thank you for using SQLWizard!";
+                    if(topic_exists)
+                        message = message + "You learned the following topics: " + learnedTopics.join(','); 
+                    addMessage(message, false);
+                }).catch(error => {
+                    console.error("Error ending session:", error);
+                });            
+        });
+
+            
+
+    
         //function to put message in the chat history
 
         function addMessage(message, isUser) {
@@ -464,9 +647,48 @@
         function hideLoadingIndicator() {
             document.getElementById('loading-indicator').style.display = 'none';
         }
+
+        
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('chat-input').disabled = true;
         });
+
+        window.onload = function() {
+        const completedTopicsButton = document.getElementById('completed-topics-button');
+        if (completedTopicsButton) {
+            completedTopicsButton.addEventListener('click', function() {
+            // fetch and display completed topics
+            fetch('/display_completed_topics')
+                .then(response => response.json())
+                .then(data => {
+                // Call a function to render data
+                renderCompletedTopics(data);
+                })
+                .catch(error => {
+                console.error('Error:', error);
+                });
+            });
+        } else {
+            console.error('completed-topics-button element not found');
+        }
+
+        function renderCompletedTopics(data) {
+            const container = document.querySelector(".completed-topics-text-container");
+            if (data.length > 0) {
+                let tableHtml = '<table class="table"><tr><th>Concept</th><th>Operation</th><th>Confidence Level</th></tr>';
+
+                    data.forEach(row => {
+                    tableHtml += `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`;
+                });
+                tableHtml += '</table>';
+                container.innerHTML = tableHtml;
+            } else {
+                container.innerHTML = '<p>No completed topics to display.</p>';
+            }
+        }
+
+        };
+
 
 
         // // Added this function to run on page load to clear the session
