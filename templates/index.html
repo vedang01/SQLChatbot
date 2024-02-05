@@ -13,6 +13,43 @@
     
     <!-- Add some inline CSS for the custom styles -->
     <style>
+
+        body{
+            font-size: 15px;
+            background-color: #f1f1f1;
+            margin-top: 60px;
+        }
+        .card-custom {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .card-header-custom {
+            background-color: #007bff; /* Bootstrap primary color */
+            color: #ffffff;
+        }
+        .btn-primary {
+            background-color: #0056b3;
+            border: none;
+            font-size: 1rem; /* Readable font size for button text */
+            padding: .5rem 1rem; /* Standard padding for buttons */
+        }
+        .whitespace {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            
+        }
+        .intro-overlay {
+            background-color: rgba(255,255,255,0.95);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1050;
+            display: block; /* Hidden by default */
+        }
         .bot-message {
             background-color: #e0e0e0;
         }
@@ -46,87 +83,151 @@
             text-decoration: none;
         }
 
+        .list-group-item {
+            display: flex;
+            align-items: center; /* Aligns items vertically centered */
+            justify-content: space-between; /* Spreads out the space between items */
+            width: 100%; /* Ensures it takes the full width available */
+        }
+
+
+        #chat-container {
+    display: flex;
+    flex-direction: column;
+    display: none;
+    align-items: stretch; /* This will ensure children stretch to fill the width */
+}
+
+
+
 
 
     </style>
 </head>
 
 <body>
+    
     <div class="container mt-5">
         <!-- Adding the SQL Wizard heading -->
-        <h1 style="color:black; text-align:center">SQL Wizard</h1>
-        <!-- This section is toggled based on the 'show_options' variable -->
-        {% if show_options %}
-        <div id="user-preferences">
-            <h3>Welcome, {{ session['firstname'] }}! What would you like to do today?</h3>
-            <select id="user-choice">
-                <option value="" disabled selected>Select your option</option>
-                <option value="select_topic">Learn about a specific topic</option>
-                <option value="doubt_clearing">Use SQLWizard to ask questions </option>
-                <option value="overview">Generate SQL overview (Recommended for Beginners)</option>
-            </select>
-            <button onclick="handleUserChoice()">Submit</button>
+        <h1 class = "text-center mb-4" style="color:black; text-align:center">SQL Wizard</h1>
+        <div class="intro-overlay" id="introOverlay">
+            <div class="container text-center">
+                <h2>Welcome to SQL Wizard</h2>
+                <p>This interactive tool will guide you through the basics of SQL to advanced concepts. Let's get started!</p>
+                <button class="btn btn-primary" onclick="closeIntro()">Begin Journey</button>
+            </div>
         </div>
-        <div id="topic-selection" style="display:none;">
-            <select id="topic-dropdown">
-                <!-- Topics will be populated here -->
-            </select>
+        <!-- Cards Section -->
+        <div class="row">
+             <!-- User Selection Card -->
+            <div class="card card-custom mb-3">
+                <div class="card-body">
+                    {% if show_options %}
+                    <div id="user-preferences">
+                        <h3>Welcome, {{ session['firstname'] }}! What would you like to do today?</h3>
+                        <select id="user-choice">
+                            <option value="" disabled selected>Select your option</option>
+                            <option value="select_topic">Learn about a specific topic</option>
+                            <option value="doubt_clearing">Use SQLWizard to ask questions </option>
+                            <option value="overview">Generate SQL overview (Recommended for Beginners)</option>
+                        </select>
+                        <button onclick="handleUserChoice()">Submit</button>
+                    </div>
+                    <div id="topic-selection" style="display:none;">
+                        <select id="topic-dropdown">
+                            <option value="" disabled selected>Select your option</option>
 
-            <div id="prerequisite-div">
-                <!-- prerequisite topics will be populated here -->
+                            <!-- Topics will be populated here -->
+                        </select>
+
+                        <div id="prerequisite-div">
+                            <!-- prerequisite topics will be populated here -->
+                        </div> 
+
+                        <div id="suggestions-div">
+                            <!-- Suggested topics will be populated here -->
+                        </div>
+
+                        <button onclick="submitTopic()">Submit</button>
+                    </div>
+                    {% endif %}
+                </div>
             </div> 
-
-            <div id="suggestions-div">
-                <!-- Suggested topics will be populated here -->
+            
+        <div id = "chat-container">    
+            <div id="list-group" class="list-group w-auto mt-3">
+                <div class="list-group-item d-flex gap-3 py-3 bot-message">
+                    <img src="https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
+                    <div class="d-flex gap-2 w-100 justify-content-between">
+                        <div>
+                            <p class="mb-0 opacity-75">Hello! I am SQLWizard, and I am here to help you on any SQL-related queries.<br>
+                                
+                                -Ask me any question you'd like, anytime!<br>
+                                -Refrain from asking anything that's not SQL-related- I invested all my time learning SQL for you!<br>
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <button onclick="submitTopic()">Submit</button>
-        </div>
-        {% endif %}
-        
-        <div id="list-group" class="list-group w-auto mt-3">
-            <div class="list-group-item d-flex gap-3 py-3 bot-message">
-                <img src="https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
-                <div class="d-flex gap-2 w-100 justify-content-between">
-                    <div>
-                        <p class="mb-0 opacity-75">Hello! I am SQLWizard, and I am here to help you on any SQL-related queries.<br>
-                            
-                            -Ask me any question you'd like, anytime!<br>
-                            -Refrain from asking anything that's not SQL-related- I invested all my time learning SQL for you!<br>
-                        </p>
-                    </div>
+            <div class="input-group mb-3 mt-3">
+                <input type="text" class="form-control" id="chat-input">
+                <div class="input-group-append">
+                    <button id="gpt-button" class="btn btn-primary">Ask SQLWizard</button>
                 </div>
             </div>
         </div>
 
-        <div class="input-group mb-3 mt-3">
-            <input type="text" class="form-control" id="chat-input">
-            <div class="input-group-append">
-                <button id="gpt-button" class="btn btn-primary">Ask SQLWizard</button>
+        <!-- Practice SQL Card -->
+        <div class="col-md-4">
+                <div class="card card-custom mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Practice SQL</h5>
+                        <p class="card-text">Hone your skills with hands-on SQL practice.</p>
+                        <button id = "practice-sql-button" class = "btn btn-primary">Practice SQL</button>
+                    </div>
+                </div>
+        </div>
+                
+            <!-- View Progress Card -->
+        <div class="col-md-4">
+                <div class="card card-custom mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">View Progress</h5>
+                        <p class="card-text">Check out your learning progress and achievements.</p>
+                        <button id="view-progress-btn" class="btn btn-primary">View Progress</button>                    </div>
+                </div>
+        </div>    
+            
+            <!-- Completed Topics Card -->
+            <div class="col-md-4">
+                <div class="card card-custom mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Completed Topics</h5>
+                        <p class="card-text">Review the topics you've mastered.</p>
+                        <button id="completed-topics-button" class="btn btn-primary">Display Completed Topics</button>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="practice-button-container">
-            <button id="practice-sql-button" class="btn btn-primary">Practice SQL</button>
-        </div>
-
-
-        <div class="completed-topics-container">
-            <button id="completed-topics-button" class="btn btn-primary">Display Completed Topics</button>
-        </div>
-
-        <div class = "completed-topics-text-container">
-
-        </div>
-
-        <button id="view-progress-btn" class="btn btn-primary">View Progress</button>
+            <!-- Quit Card -->
+            <div class="col-md-4">
+                <div class="card card-custom mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Quit Session</h5>
+                        <p class="card-text">End your current session and log out.</p>
+                        <div class="d-grid gap-2">
+                            <button id="quit-button" class="btn btn-danger">Quit</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         
-    
-        <div class = "quit-container">
-            <button id="quit-button" class="btn btn-danger">Quit</button>
-        </div>
+    </div>
 
-        <!-- for rendering graph -->
+    
+    <div class = "completed-topics-text-container"></div>
+    <!-- for rendering graph -->
         <canvas id="progress-chart" width="400" height="50"></canvas> 
 
         <!-- Add a Finish Topic button and a hidden form for confidence score submission -->
@@ -147,6 +248,18 @@
             <p class="mb-0 mt-2">Loading...</p>
         </div>
     </div>
+    </div>
+        
+        
+
+        
+
+    
+        <!-- <div class = "quit-container">
+            <button id="quit-button" class="btn btn-danger">Quit</button>
+        </div> -->
+
+        
 
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
@@ -162,6 +275,9 @@
             document.querySelectorAll("pre code").forEach(block => {
                 hljs.highlightBlock(block);
             });
+        }
+        function closeIntro() {
+            document.getElementById('introOverlay').style.display = 'none';
         }
 
         const chatInput = document.querySelector('#chat-input');
@@ -251,7 +367,6 @@
             })
             .then(topicsByOperation => {
                 const topicSelect = document.getElementById("topic-dropdown");
-                topicSelect.innerHTML = ''; // Clear any existing options
                 // Iterate over operations and create optgroups
                 Object.entries(topicsByOperation).forEach(([operation, topics]) => {
                     let optgroup = document.createElement('optgroup');
@@ -272,9 +387,11 @@
         function handleUserChoice() {
             const choice = document.getElementById("user-choice").value;
             const userPreferences = document.getElementById("user-preferences");
+            const chatContainer = document.getElementById("chat-container");
 
             const topicSelectionDiv = document.getElementById("topic-selection");
             const chatInput = document.getElementById('chat-input');
+            console.log(choice);
 
             switch (choice) {
                 case "select_topic":
@@ -285,6 +402,7 @@
                     break;
                 case "doubt_clearing":
                     // Continue with the normal chatbot flow
+                    chatContainer.style.display = 'block';
                     clearChat();
                     addMessage("Ask an SQL-related question.", false)
                     //userPreferences.style.display = 'none';
@@ -292,6 +410,7 @@
                     break;
 
                 case "overview": 
+                    chatContainer.style.display = 'block';
                     clearChat();
                     showLoadingIndicator();
                     addMessage("Please wait while I generate an overview for you...");
@@ -324,6 +443,7 @@
             const selectedTopic = document.getElementById("topic-dropdown").value;
             if(selectedTopic){
                 showLoadingIndicator();
+                document.getElementById("chat-container").style.display = 'block';
                 clearChat();
                 addMessage("Please wait while I generate a summary for you ...")
                 // Hide the user preferences and topic selection while loading
@@ -384,7 +504,6 @@
                 })
                 .then(data => {
                     // Handle the response from the server
-                    console.log(data);
                     // Reset the form and re-enable the user preferences for next topic selection
                     displaySuggestedTopics();
                     document.getElementById('confidence-form').style.display = 'none';
@@ -463,9 +582,9 @@
             }
         });
 
-        document.getElementById('practice-sql-button').addEventListener('click', function() {
-            window.location.href = '/sandbox'; // Redirect to the sandbox page
-        });
+         document.getElementById('practice-sql-button').addEventListener('click', function() {
+             window.location.href = '/sandbox'; // Redirect to the sandbox page
+         });
 
 
 
@@ -473,13 +592,16 @@
         document.getElementById('finish-topic-btn').addEventListener('click', function() {
         const finishTopicContainer = document.getElementById('finish-topic-container');
         const confidenceForm = document.getElementById('confidence-form');
+        const chatContainer = document.getElementById("chat-container");
 
         
         // Show the form to submit the confidence score
         finishTopicContainer.style.display = 'inline-block';
         confidenceForm.style.display = 'block';
+        chatContainer.style.display = 'none';
 
-        addMessage("Great Job! Try practicing what you learnt in Sandbox Mode.", false);
+
+        //addMessage("Great Job! Try practicing what you learnt in Sandbox Mode.", false);
         });
 
 
@@ -526,17 +648,19 @@
                         type: 'bar',
                         data: {
                             labels: graphData.operations,
-                            datasets: [{
-                                label: 'Total Topics',
-                                data: graphData.totalTopics,
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                borderWidth: 1
-                            }, {
+                            datasets: [
+                                {
                                 label: 'Completed Topics',
                                 data: graphData.completedTopics,
                                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                                 borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Total Topics',
+                                data: graphData.totalTopics,
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
                                 borderWidth: 1
                             }]
                         },
@@ -675,7 +799,7 @@
         function renderCompletedTopics(data) {
             const container = document.querySelector(".completed-topics-text-container");
             if (data.length > 0) {
-                let tableHtml = '<table class="table"><tr><th>Concept</th><th>Operation</th><th>Confidence Level</th></tr>';
+                let tableHtml = '<table class="table"><tr><th>Concept Name</th><th>Database Activity</th><th>Confidence Level</th></tr>';
 
                     data.forEach(row => {
                     tableHtml += `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`;
