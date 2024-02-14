@@ -7,20 +7,19 @@ import mysql.connector
 from mysql.connector import Error
 
 
-db_password = os.getenv("DB_PASSWORD")
-
-
-# Set the OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
-
 CORS(app)
 # Configure server-side session
+
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_PERMANENT"] = False
 Session(app)
 
+# make sure to set this via CLI
+db_password = os.getenv("DB_PASSWORD")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
 
 # Initialize conversation history with the system message
 conversation_history = [
@@ -31,9 +30,10 @@ conversation_history = [
 ]
 
 
-# Separate function for GPT-3 response
+# Function to return GPT3.5 API response
 def generateChatResponse(prompt, topic=""):
     # Retrieve user's personal details from session
+    # These details will be used in the personalization prompt
     first_name = session.get("firstname")
     age = session.get("age")
     profession = session.get("profession")
@@ -43,7 +43,7 @@ def generateChatResponse(prompt, topic=""):
     if topic:
         personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Give a brief summary along with an example. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format."
     else:
-        # Personalize the prompt with the user's details
+        # User wants to ask SQL wizard a general question
         personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format."
 
     # Include the personalized prompt in the conversation history
@@ -51,7 +51,7 @@ def generateChatResponse(prompt, topic=""):
         {"role": "user", "content": personalized_prompt}
     )
 
-    # session["conversation_history"].append({"role": "user", "content": prompt})
+    # API call
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=session["conversation_history"]
     )
@@ -66,35 +66,25 @@ def generateChatResponse(prompt, topic=""):
 
     except:
         display_answer = (
-            "Oops answer failed to generate, please try again or come back later"
+            "Answer failed to generate, please try again or come back later"
         )
 
     return display_answer
 
 
-# Separate function for GPT-3 response
+# Function to classify user prompts as SQL or Non SQL related
 def isSQLrelated(prompt):
-    # response = openai.ChatCompletion.create(
-    #     model="gpt-3.5-turbo",
-    #     messages=[
-    #         {
-    #             "role": "system",  ##you can improve this classifier
-    #             "content": "You are an AI trained to classify 'user' prompt as SQL-related or not. A prompt is considered SQL-related if it pertains to database queries, SQL commands, data manipulation or retrieval, table structure, or SQL functions. Non-SQL related prompts include general programming questions, non-technical queries and personal opinions. Please take a note of the conversation history while classifying. Respond 'yes' if the prompt is classified as SQL related; otherwise, respond 'no'. When in doubt, classify prompt as SQL-related.",
-    #         },
-    #         {"role": "user", "content": prompt},  # Current prompt to classify
-    #     ],
-    # )
 
+    # Adding conversation history to the classifier, so it knows the context of the conversation
     messages = session.get("conversation_history", []) + [
         {
             "role": "system",
             "content": "You are an AI trained to classify 'user' prompt as SQL-related or not. A prompt is considered SQL-related if it pertains to database queries, SQL commands, data manipulation or retrieval, table structure, or even general data-related questions and examples. If a prompt is a follow up to an SQL related prompt, then it is SQL related as well. Non-SQL related prompts are those that clearly deviate from SQL and data, including general questions, non-technical queries, and personal opinions. Please make sure to have a look at the whole conversation history before classifying as Non-SQL related. The conversation might suggest that the user prompt is simply a follow up response. In that case, it is SQL-related. Respond 'yes' if the prompt is classified as SQL related; otherwise, respond 'no'. When in doubt, classify prompt as SQL-related. Most(99%) prompts will be classified as SQL-related.",
-            # "role": "system",
-            # "content": "You are an AI designed to determine if a user's prompt is related to SQL. Consider the entire conversation history to understand the context. A prompt is SQL-related if it involves SQL syntax, database queries, data manipulation, retrieval, table creation, table structures, or general table/database questions. If a prompt is a follow-up within a SQL discussion, it should be considered SQL-related. Only classify a prompt as non-SQL if it clearly deviates from these topics or is explicitly non-technical or personal. In cases where the context isn't clear, err on the side of classifying the prompt as SQL-related, as most exchanges are expected to be about SQL. Respond 'yes' if the prompt is classified as SQL related; otherwise, respond 'no'.",
         },
         {"role": "user", "content": prompt},  # Current prompt to classify
     ]
 
+    # API CALL
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
 
     try:
@@ -105,6 +95,7 @@ def isSQLrelated(prompt):
     return answer
 
 
+# Function to fetch all topics from database with their operations
 def fetch_all_topics_from_db():
     topics = {}
     try:
@@ -117,6 +108,7 @@ def fetch_all_topics_from_db():
         if connection.is_connected():
             cursor = connection.cursor()
 
+            # Query that return all concepts and their associated operations using joins
             query = """
              SELECT c.Concept, o.`Operation Name`
             FROM concepts c
@@ -130,6 +122,7 @@ def fetch_all_topics_from_db():
             # Fetch all the resulting rows
             result = cursor.fetchall()
 
+            # Create a dictionary
             for concept, operation in result:
                 if operation not in topics:
                     topics[operation] = []
@@ -143,15 +136,46 @@ def fetch_all_topics_from_db():
         # Closing the database connection
         if connection.is_connected():
             connection.close()
-            print("MySQL connection is closed")
 
     return topics
 
 
-@app.route("/fetch_all_topics")
-def fetch_all_topics():
-    topics = fetch_all_topics_from_db()
-    return jsonify(topics)
+# Fetch Live Database data for sandbox mode
+def get_table_data():
+
+    # List of tables in backend sandbox database
+    # Add to this list in case more tables are added to sandbox database
+    tables = [
+        "students",
+        "courses",
+        "enrollments",
+    ]
+    data = {}
+
+    # A new connection has been formed for a read only user that cannot perform write operations on the live database
+
+    connection = mysql.connector.connect(
+        host="localhost",
+        database="sandbox",
+        user="readonly_user",
+        password="sandbox789",
+    )
+    if connection is None:
+        return None
+    try:
+        cursor = connection.cursor()
+        for table in tables:
+
+            # Fetching all data from the backend tables
+            cursor.execute(f"SELECT * FROM {table}")
+            columns = [desc[0] for desc in cursor.description]
+            data[table] = {"columns": columns, "rows": cursor.fetchall()}
+    except Exception as e:
+        print(f"Error fetching table data: {e}")
+        return None
+    finally:
+        connection.close()
+    return data
 
 
 # Root endpoint to serve the frontend HTML
@@ -161,46 +185,20 @@ def index():
     return render_template("login.html", **locals())
 
 
-@app.route("/generate_sql_overview")
-def generate_sql_overview():
-    overview_prompt = "Generate a beginner-friendly introduction to SQL. Explain the use of SQL, and how it fits in the technological landscape. Do not add technical jargon or any SQL commands. Format your response beautifully in HTML. Add line breaks and new lines."
-    return jsonify({"overview": generateChatResponse(overview_prompt)})
-
-
 # Endpoint for GPT API completions
 @app.route("/callapi", methods=["POST"])
 def callapi():
     data = request.get_json()
+
+    # data prompt contains user prompt captured by frontend
     prompt = data["prompt"]
     res = {}  # result
     try:
-        ###maybe try out some prompt engineering here
         res["answer"] = generateChatResponse(prompt)
         return jsonify(res), 200
-    except Exception as e:  # Here's where we handle general exceptions
+    except Exception as e:
         res["error"] = "Server error: " + str(e)
-        return jsonify(res), 500  # Sending a 500 Internal Server Error status
-
-
-# Endpoint for SQL classifier
-@app.route("/SQLclassifier", methods=["POST"])
-def SQLclassifier():
-    data = request.get_json()
-    prompt = data["prompt"]
-    res = {}  # result
-    res["error"] = None
-    is_sql = False
-    try:
-        response = isSQLrelated(prompt)
-        is_sql = True if response.lower() == "yes" else False
-        res["is_sql"] = is_sql
-        return jsonify(res), 200
-
-    except Exception as e:  # Here's where we handle general exceptions
-        res["error"] = "Server error: " + str(e)
-        res["is_sql"] = is_sql
-        res["classifier_failed"] = True
-        return jsonify(res), 500  # Sending a 500 Internal Server Error status
+        return jsonify(res), 500
 
 
 # User registration
@@ -210,6 +208,7 @@ def register():
         # When the route is accessed via a GET request, render the registration form
         return render_template("register.html")
     else:
+        # POST request, insert data into backend table
         data = request.get_json()
         # Validate the existence of all required fields
         if not all(
@@ -231,6 +230,7 @@ def register():
                 400,
             )
 
+        # extracting all information from the frontend form
         username = data.get("username")
         password = data.get("password")
         age = data.get("age")
@@ -288,7 +288,6 @@ def register():
             )
             connection.commit()
 
-            # Close the connection
             cursor.close()
             connection.close()
 
@@ -315,7 +314,7 @@ def register():
             )
 
         except Exception as e:
-            print("Server error: ", str(e))  # Log to console
+            print("Server error: ", str(e))
 
             return (
                 jsonify(
@@ -336,6 +335,8 @@ def login():
         # When the route is accessed via a GET request, render the registration form
         return render_template("login.html")
     else:
+
+        # POST request, get user from backend and store information in session
         data = request.get_json()
         username = data.get("username")
         password = data.get("password")
@@ -354,28 +355,36 @@ def login():
                 user="root",
                 password=db_password,
             )
+
             cursor = connection.cursor()
             # Query to select the user
-            query = "SELECT username, firstname, age, profession, proficiency, Reason FROM users WHERE username = %s AND password = %s"
+            query = "SELECT userid, username, firstname, age, profession, proficiency, Reason FROM users WHERE username = %s AND password = %s"
             cursor.execute(query, (username, password))
             user_record = cursor.fetchone()
             cursor.close()
             connection.close()
+
             # If user exists and password matches
             if user_record:
-                username, firstname, age, profession, proficiency, reason = user_record
+                userID, username, firstname, age, profession, proficiency, reason = (
+                    user_record
+                )
+
+                # Storing user details in session for later use
                 session["loggedin"] = True
-                session["username"] = username  # Setting session with username
+                session["userID"] = userID
+                session["username"] = username
                 session["firstname"] = firstname
                 session["age"] = age
                 session["profession"] = profession
                 session["proficiency"] = proficiency
                 session["reason"] = reason
                 session["conversation_history"] = conversation_history
+
                 # Add a system message to include the user's details in the conversation context
                 personalized_context = {
                     "role": "system",
-                    "content": f"Remember to address the user by their first name : {firstname}. Answer questions as if user is {age} years old, and is a {profession}. Adapt responses, as if the user was {proficiency} at SQL. Remember, user wants to learn SQL because of the following reason: {reason}",
+                    "content": f"Remember to address the user by their first name : {firstname}. Answer questions as if user is {age} years old, and is a {profession}. Adapt responses, as if the user was a(n) {proficiency} at SQL. Remember, user wants to learn SQL because of the following reason: {reason}",
                 }
                 session["conversation_history"].append(personalized_context)
                 # Redirect to a home page or profile page on successful login
@@ -424,12 +433,43 @@ def home():
         return redirect(url_for("login"))
 
 
-# Quit functionality
-@app.route("/quit", methods=["POST"])
-def quit():
-    learned_topics = session.get("learned_topics", [])
-    session.clear()
-    return jsonify(learned_topics=learned_topics)
+# Returns all topics from database
+@app.route("/fetch_all_topics")
+def fetch_all_topics():
+    topics = fetch_all_topics_from_db()
+    return jsonify(topics)
+
+
+# Route to generate SQL overview
+@app.route("/generate_sql_overview")
+def generate_sql_overview():
+
+    # This acts as a user prompt
+    overview_prompt = "Generate a beginner-friendly introduction to SQL. Explain the use of SQL, and how it fits in the technological landscape. Do not add technical jargon or any SQL commands. Format your response beautifully in HTML. Add line breaks and new lines."
+    return jsonify({"overview": generateChatResponse(overview_prompt)})
+
+
+# Endpoint for SQL classifier
+@app.route("/SQLclassifier", methods=["POST"])
+def SQLclassifier():
+    data = request.get_json()
+    prompt = data["prompt"]
+    res = {}  # result
+    res["error"] = None
+    is_sql = False
+    try:
+        response = isSQLrelated(prompt)
+        is_sql = True if response.lower() == "yes" else False
+
+        # Return true or false based on the classifier's output
+        res["is_sql"] = is_sql
+        return jsonify(res), 200
+
+    except Exception as e:
+        res["error"] = "Server error: " + str(e)
+        res["is_sql"] = is_sql
+        res["classifier_failed"] = True
+        return jsonify(res), 500
 
 
 # After selecting topic to learn, generate a basic overview
@@ -448,7 +488,7 @@ def submit_confidence_score():
     data = request.get_json()
     topic = data.get("topic")
     score = int(data.get("score"))
-    username = session.get("username")
+    user_id = session.get("userID")
 
     # adding topics to list of learned topics to be displayed on quit
     if "learned_topics" not in session:
@@ -457,7 +497,6 @@ def submit_confidence_score():
 
     # Add logic to insert the confidence score into the database
     try:
-        # Establishing the database connection
         connection = mysql.connector.connect(
             host="localhost", database="sqlwizard", user="root", password=db_password
         )
@@ -465,21 +504,13 @@ def submit_confidence_score():
         # Check if connection was successful
         if connection.is_connected():
             cursor = connection.cursor()
-            query = "SELECT UserID FROM users WHERE username = %s"
-            # Check if the username already exists
-            cursor.execute(query, (username,))
-            result = cursor.fetchone()
-            user_id = result[0]
 
             cursor.execute(
                 "SELECT ConceptID FROM concepts WHERE Concept = %s", (topic,)
             )
             concept_id = cursor.fetchone()[0]
 
-            # print(f"ConceptID: {concept_id}, Topic: {topic}")
-            # concept ID is fine
-
-            # Prepare the insert statement
+            # insert yser confidence values into table
             insert_stmt = (
                 "INSERT INTO user_confidence (UserID, ConceptID, Concept, Confidence) "
                 "VALUES (%s, %s, %s, %s) "
@@ -503,6 +534,7 @@ def submit_confidence_score():
     return jsonify({"message": "Failed to submit confidence score"}), 400
 
 
+# Get prerequisite of the selected topic
 @app.route("/get_prerequisite", methods=["POST"])
 def get_prerequisite():
     data = request.get_json()
@@ -513,6 +545,8 @@ def get_prerequisite():
             host="localhost", database="sqlwizard", user="root", password=db_password
         )
         cursor = connection.cursor()
+
+        # Query to get prerequisite of a particular concept chosen by the user
         query = "SELECT Prerequisite FROM concepts WHERE Concept = %s"
         cursor.execute(query, (topic,))
         prerequisite = cursor.fetchone()
@@ -534,6 +568,7 @@ def get_prerequisite():
 @app.route("/suggested_topics")
 def suggested_topics():
     username = session.get("username")
+    user_id = session.get("userID")
     try:
         connection = mysql.connector.connect(
             host="localhost", database="sqlwizard", user="root", password=db_password
@@ -545,9 +580,8 @@ def suggested_topics():
             # Get the user ID based on the username
             cursor.execute("SELECT UserID FROM users WHERE Username = %s", (username,))
             user_id_result = cursor.fetchone()
-            if user_id_result:
-                user_id = user_id_result[0]
 
+            if user_id_result:
                 # Get the concepts where the user's confidence score is null or less than 3
                 cursor.execute(
                     """
@@ -600,16 +634,17 @@ def suggested_topics():
                             8 - len(high_confidence_topics),
                         ),
                     )
-                    # low_confidence_concepts = [row[0] for row in cursor.fetchall()]
+
                     low_confidence_topics = cursor.fetchall()
-                    # print(low_confidence_concepts)
+                    print(low_confidence_topics)
+                    print(high_confidence_topics)
                     for concept, operation in low_confidence_topics:
                         suggested_topics.append(
                             {"Concept": concept, "Operation Name": operation}
                         )
-                print(suggested_topics)
 
-                if len(suggested_topics) == 0:  # for new users
+                # These are default suggested topics for new users
+                if len(suggested_topics) == 0:
                     suggested_topics.append(
                         {"Concept": "SQL Basics", "Operation Name": "Creation"}
                     )
@@ -629,8 +664,6 @@ def suggested_topics():
                         {"Concept": "Constraints", "Operation Name": "Creation"}
                     )
 
-                    # high_confidence_prereq += low_confidence_concepts
-
                 return jsonify(suggested_topics[:8])
             else:
                 return jsonify({"message": "User not found"}), 404
@@ -646,77 +679,15 @@ def suggested_topics():
     return jsonify({"message": "No suggestions available"}), 404
 
 
-# Fetch Live Database data
-def get_table_data():
-    tables = [
-        "students",
-        "courses",
-        "enrollments",
-    ]
-    data = {}
-    connection = mysql.connector.connect(
-        host="localhost",
-        database="sandbox",
-        user="readonly_user",
-        password="sandbox789",
-    )
-    if connection is None:
-        return None
-    try:
-        cursor = connection.cursor()
-        for table in tables:
-            cursor.execute(f"SELECT * FROM {table}")
-            columns = [desc[0] for desc in cursor.description]
-            data[table] = {"columns": columns, "rows": cursor.fetchall()}
-    except Exception as e:
-        print(f"Error fetching table data: {e}")
-        return None
-    finally:
-        connection.close()
-    return data
-
-
-# Route for sandbox mode
-@app.route("/sandbox", methods=["GET", "POST"])
-def sandbox():
-    if request.method == "POST":
-        query = request.form["query"]
-        try:
-            connection = mysql.connector.connect(
-                host="localhost",
-                database="sandbox",
-                user="readonly_user",
-                password="sandbox789",
-            )
-            if connection is None:
-                return jsonify({"error": "Database connection failed"}), 500
-            cursor = connection.cursor()
-            cursor.execute(query)
-            results = cursor.fetchall()
-            return jsonify(results)
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-        finally:
-            if connection.is_connected():
-                connection.close()
-
-    else:
-        # Render the sandbox HTML page
-
-        tables_data = get_table_data()
-        if tables_data is None:
-            return "Error fetching table data", 500
-        return render_template("sandbox.html", tables_data=tables_data)
-
-
+# Route to display completed topics for a user
 @app.route("/display_completed_topics", methods=["GET"])
 def display_completed_topics():
     # Check if username is in session
     if "username" not in session:
         return jsonify({"success": False, "message": "User not logged in"}), 401
 
-    username = session["username"]
+    # username = session["username"]
+    user_id = session.get("userID")
     connection = None
     try:
         connection = mysql.connector.connect(
@@ -727,16 +698,16 @@ def display_completed_topics():
         )
         cursor = connection.cursor()
 
-        # Fetch the userID based on the username from the session
-        user_id_query = "SELECT UserID FROM users WHERE Username = %s"
-        cursor.execute(user_id_query, (username,))
-        result = cursor.fetchone()
+        # # Fetch the userID based on the username from the session
+        # user_id_query = "SELECT UserID FROM users WHERE Username = %s"
+        # cursor.execute(user_id_query, (username,))
+        # result = cursor.fetchone()
 
-        # If no result, the user is not found
-        if not result:
-            return jsonify({"success": False, "message": "User not found"}), 404
+        # # If no result, the user is not found
+        # if not result:
+        #     return jsonify({"success": False, "message": "User not found"}), 404
 
-        user_id = result[0]
+        # user_id = result[0]
 
         # fetch the completed topics and confidence levels
         topics_query = """
@@ -780,29 +751,31 @@ def display_completed_topics():
             connection.close()
 
 
+# View progress route used to generate graph data
 @app.route("/view_progress")
 def view_progress():
     if "username" not in session:
         return jsonify({"success": False, "message": "User not logged in"}), 401
-    username = session["username"]
+    # username = session["username"]
+    user_id = session.get("userID")
 
     connection = None
     try:
         connection = mysql.connector.connect(
             host="localhost", database="sqlwizard", user="root", password=db_password
         )
-        cursor = connection.cursor()
+        # cursor = connection.cursor()
 
-        # Fetch the userID based on the username from the session
-        user_id_query = "SELECT UserID FROM users WHERE Username = %s"
-        cursor.execute(user_id_query, (username,))
-        result = cursor.fetchone()
+        # # Fetch the userID based on the username from the session
+        # user_id_query = "SELECT UserID FROM users WHERE Username = %s"
+        # cursor.execute(user_id_query, (username,))
+        # result = cursor.fetchone()
 
-        # If no result, the user is not found
-        if not result:
-            return jsonify({"success": False, "message": "User not found"}), 404
+        # # If no result, the user is not found
+        # if not result:
+        #     return jsonify({"success": False, "message": "User not found"}), 404
 
-        user_id = result[0]
+        # user_id = result[0]
 
         cursor = connection.cursor(dictionary=True)
 
@@ -868,6 +841,48 @@ def view_progress():
         if connection and connection.is_connected():
             cursor.close()
             connection.close()
+
+
+# Route for sandbox mode
+@app.route("/sandbox", methods=["GET", "POST"])
+def sandbox():
+    if request.method == "POST":
+        query = request.form["query"]
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                database="sandbox",
+                user="readonly_user",
+                password="sandbox789",
+            )
+            if connection is None:
+                return jsonify({"error": "Database connection failed"}), 500
+            cursor = connection.cursor()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            return jsonify(results)
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+        finally:
+            if connection.is_connected():
+                connection.close()
+
+    else:
+        # Render the sandbox HTML page
+
+        tables_data = get_table_data()
+        if tables_data is None:
+            return "Error fetching table data", 500
+        return render_template("sandbox.html", tables_data=tables_data)
+
+
+# Quit functionality
+@app.route("/quit", methods=["POST"])
+def quit():
+    learned_topics = session.get("learned_topics", [])
+    session.clear()
+    return jsonify(learned_topics=learned_topics)
 
 
 if __name__ == "__main__":

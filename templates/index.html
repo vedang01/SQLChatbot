@@ -52,6 +52,11 @@
             z-index: 1050;
             display: block; /* Hidden by default */
         }
+
+        .hljs-keyword {
+            display: block; 
+        }
+
         .bot-message {
             background-color: #e0e0e0;
         }
@@ -169,7 +174,7 @@
         }
  
         pre, code {
-        white-space: pre-wrap;
+        white-space: pre;
         word-break: break-all!important; 
         }
 
@@ -886,14 +891,12 @@
             // Check if the content has code block
             let formattedMessage = message;
 
-            // formattedMessage = formatBotResponse(formattedMessage);
+            formattedMessage = formatBotResponse(formattedMessage);
             formattedMessage = formatGPTResponse(formattedMessage);
             formattedMessage = formatGPTResponseToHTMLTable(formattedMessage);
 
             console.log(formattedMessage);
                 
-            
-            
 
             let html_data = `
                  <div class="list-group-item d-flex gap-3 py-3 ${messageType}">
@@ -975,12 +978,13 @@
         //function to format any SQL code 
 
 
-        // function formatBotResponse(content) {
-        //     // content = content.replace(/• /g, '<br>• ');
-        //     console.log("reached in formatting function for SQL :)")
-        //     content = content.replace(/```([\s\S]+?)```/g, '</p><br><pre><code>$1</code></pre><br><p>');
-        //     return content;
-        // }
+        function formatBotResponse(content) {
+            console.log("reached in formatting function for SQL :)");
+            // Match content that starts with ```sql and ends with ```
+            content = content.replace(/```sql\n([\s\S]+?)```/g, '</p><br><pre><code class="sql">$1</code></pre><br><p>');
+            return content;
+        }
+
         // function formatBotResponse(content) {
         //     console.log("Reached in formatting function for SQL :)", content);
 
@@ -995,19 +999,19 @@
         //     console.log("Formatted content:", content);
         //     return content;
         // }
-        function formatBotResponse(content) {
-    // Define SQL keywords to look for
-    const sqlKeywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'ON', 'AND', 'OR', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE'];
-    const regexPattern = new RegExp(`\\b(${sqlKeywords.join('|')})\\b`, 'g');
+        //function formatBotResponse(content) {
+//     // Define SQL keywords to look for
+//     const sqlKeywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'ON', 'AND', 'OR', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE'];
+//     const regexPattern = new RegExp(`\\b(${sqlKeywords.join('|')})\\b`, 'g');
 
-    // Insert a line break before each capitalized SQL keyword
-    content = content.replace(regexPattern, (match) => `<br>${match}`);
+//     // Insert a line break before each capitalized SQL keyword
+//     content = content.replace(regexPattern, (match) => `<br>${match}`);
 
-    // Wrap SQL code with pre and code tags if it's contained within a code block
-    content = content.replace(/```([\s\S]+?)```/g, (match, code) => `<pre><code>${code}</code></pre>`);
+//     // Wrap SQL code with pre and code tags if it's contained within a code block
+//     content = content.replace(/```([\s\S]+?)```/g, (match, code) => `<pre><code>${code}</code></pre>`);
 
-    return content;
-}
+//     return content;
+// }
 
 
 
