@@ -10,7 +10,8 @@
     <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/a11y-dark.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.18/css/bootstrap-select.min.css">
+
     <!-- Add some inline CSS for the custom styles -->
     <style>
 
@@ -32,6 +33,7 @@
         .btn-primary {
             background-color: #0056b3;
             border: none;
+            width:auto;
             font-size: 1rem; /* Readable font size for button text */
             padding: .5rem 1rem; /* Standard padding for buttons */
         }
@@ -58,6 +60,16 @@
             background-color: #292c2f;
             color: white;
         }
+
+        #prerequisite-div{
+            margin-bottom: 15px;
+        }
+        .operation-group h4 {
+            font-size: 1.2em; /* Decrease to your preference */
+        }
+
+    
+    
         .sql-query-block {
             background-color: #f7f9fc;
             padding: 10px;
@@ -92,15 +104,84 @@
 
 
         #chat-container {
-    display: flex;
-    flex-direction: column;
-    display: none;
-    align-items: stretch; /* This will ensure children stretch to fill the width */
-}
+            display: flex;
+            flex-direction: column;
+            display: none;
+            align-items: stretch; /* This will ensure children stretch to fill the width */
+        }
+
+        li{
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        h3{
+            margin-bottom: 1rem;
+        }
+        .btn-highlight:hover {
+        box-shadow: 0 0 0 0.1rem rgba(38, 143, 255, 0.5); /* This will create a glow effect */
+        }
+
+        /* Custom CSS for form-select */
+        select{
+        border-radius: 0.25rem;
+        border: 2px solid #ced4da;
+        width: 60%;
+        }
+
+        /* Custom CSS for button inside input-group */
+        .input-group .btn-highlight {
+        border-radius: 0 0.25rem 0.25rem 0; /* Align the radius with the select */
+        }
+
+        .session-ended-message {
+        text-align: center;
+        font-size: 1.2em; /* Adjust size as needed */
+        margin: 10px;
+        }
+
+        .no-topics-message{
+            font-family: 'Arial', sans-serif;
+            font-size: 0.8rem;
+            color: #6c757d; 
+            text-align: center;
+            padding: 0.5rem; 
+            font-weight: lighter;
+            border-radius: 0.5rem; 
+            margin-top: 0.3rem; 
+            background-color: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+        }
+
+        /* Custom CSS for responsive tables */
+        .gpt-response-table table {
+        width: 40%; 
+        }
+
+        .gpt-response-table td, .gpt-response-table th {
+        padding: 8px; /* Adds padding */
+        }
+
+        @media screen and (max-width: 600px) {
+        .gpt-response-table table {
+            display: block;
+            overflow-x: auto; /* Adds horizontal scroll on small screens */
+        }
+        }
+ 
+        pre, code {
+        white-space: pre-wrap;
+        word-break: break-all!important; 
+        }
+
+       /* .sql-query-block, .gpt-response-table {
+        overflow-x: auto; 
+        
+        } */
 
 
 
 
+        
 
     </style>
 </head>
@@ -113,32 +194,60 @@
         <div class="intro-overlay" id="introOverlay">
             <div class="container text-center">
                 <h2>Welcome to SQL Wizard</h2>
-                <p>This interactive tool will guide you through the basics of SQL to advanced concepts. Let's get started!</p>
-                <button class="btn btn-primary" onclick="closeIntro()">Begin Journey</button>
+                <p>SQL Wizard is a personalized educational chatbot designed to teach SQL. There are several features you can use to enhance your SQL learning journey.</p>
+                
+                <!-- New addition starts here -->
+                <div class="user-options">
+                    <p class="lead">Once logged in, you can:</p>
+                    <ul class="list-unstyled">
+                        <li><strong>Select a Topic:</strong> Choose a specific topic to learn from a dropdown, or simply select one of the suggested topics. </li>
+                        <li><strong>Suggested Topics:</strong> New topics are suggested based on how confident you are in your completed topics.</li>
+                        <li><strong>SQL Wizard Chatbot:</strong> Use the chatbot to solve any SQL-related queries.</li>
+                        <li><strong>SQL Overview:</strong> Get a beginner-friendly overview of SQL concepts and usage.</li>
+                        <li><strong>Sandbox Mode:</strong> Practice writing SQL queries against a live database.</li>
+                        <li><strong>Progress Tracker:</strong> View your learning progress and review topics you've mastered.</li>
+                    </ul>
+                </div>
+                <!-- New addition ends here -->
+
+                <button class="btn btn-primary mt-4" onclick="closeIntro()">Begin Journey</button>
             </div>
         </div>
+
+
+
         <!-- Cards Section -->
         <div class="row">
              <!-- User Selection Card -->
-            <div class="card card-custom mb-3">
+            <div class="card card-custom mb-3" id="user-preferences-div">
                 <div class="card-body">
                     {% if show_options %}
                     <div id="user-preferences">
-                        <h3>Welcome, {{ session['firstname'] }}! What would you like to do today?</h3>
-                        <select id="user-choice">
-                            <option value="" disabled selected>Select your option</option>
-                            <option value="select_topic">Learn about a specific topic</option>
-                            <option value="doubt_clearing">Use SQLWizard to ask questions </option>
-                            <option value="overview">Generate SQL overview (Recommended for Beginners)</option>
-                        </select>
-                        <button onclick="handleUserChoice()">Submit</button>
-                    </div>
-                    <div id="topic-selection" style="display:none;">
-                        <select id="topic-dropdown">
-                            <option value="" disabled selected>Select your option</option>
 
-                            <!-- Topics will be populated here -->
-                        </select>
+                        <h3>Welcome, {{ session['firstname'] }}! What would you like to do today?</h3>
+
+                        <div class = "input-group mb-3">
+                            <select id="user-choice">
+                                <option value="" disabled selected>Select your option</option>
+                                <option value="select_topic">Learn about a specific topic</option>
+                                <option value="doubt_clearing">Use SQLWizard to ask questions </option>
+                                <option value="overview">Generate SQL overview (Recommended for Beginners)</option>
+                            </select>
+                            <button onclick="handleUserChoice()" class="btn btn-primary btn-highlight">Submit</button>
+                        </div>
+                    </div>
+
+                    <div id="topic-selection" style="display:none;">
+                        
+                        <div class="input-group mb-3">
+                            <select id="topic-dropdown">
+                                <option value="" disabled selected>Choose a Topic</option>
+
+                                <!-- Topics will be populated here -->
+                            </select>
+                            <button onclick="submitTopic()" class="btn btn-primary btn-highlight">Submit</button>
+
+                        </div>
 
                         <div id="prerequisite-div">
                             <!-- prerequisite topics will be populated here -->
@@ -148,70 +257,76 @@
                             <!-- Suggested topics will be populated here -->
                         </div>
 
-                        <button onclick="submitTopic()">Submit</button>
                     </div>
                     {% endif %}
                 </div>
             </div> 
             
-        <div id = "chat-container">    
-            <div id="list-group" class="list-group w-auto mt-3">
-                <div class="list-group-item d-flex gap-3 py-3 bot-message">
-                    <img src="https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
-                    <div class="d-flex gap-2 w-100 justify-content-between">
-                        <div>
-                            <p class="mb-0 opacity-75">Hello! I am SQLWizard, and I am here to help you on any SQL-related queries.<br>
-                                
-                                -Ask me any question you'd like, anytime!<br>
-                                -Refrain from asking anything that's not SQL-related- I invested all my time learning SQL for you!<br>
-                            </p>
+            <div id = "chat-container">    
+                <div id="list-group" class="list-group w-auto mt-3">
+                    <div class="list-group-item d-flex gap-3 py-3 bot-message">
+                        <img src="https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
+                        <div class="d-flex gap-2 w-100 justify-content-between">
+                            <div>
+                                <p class="mb-0 opacity-75">Hello! I am SQLWizard, and I am here to help you on any SQL-related queries.<br>
+                                    
+                                    -Ask me any question you'd like, anytime!<br>
+                                    -Refrain from asking anything that's not SQL-related- I invested all my time learning SQL for you!<br>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="input-group mb-3 mt-3">
-                <input type="text" class="form-control" id="chat-input">
-                <div class="input-group-append">
-                    <button id="gpt-button" class="btn btn-primary">Ask SQLWizard</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Practice SQL Card -->
-        <div class="col-md-4">
-                <div class="card card-custom mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">Practice SQL</h5>
-                        <p class="card-text">Hone your skills with hands-on SQL practice.</p>
-                        <button id = "practice-sql-button" class = "btn btn-primary">Practice SQL</button>
+                <div class="input-group mb-3 mt-3">
+                    <input type="text" class="form-control" id="chat-input">
+                    <div class="input-group-append">
+                        <button id="gpt-button" class="btn btn-primary">Ask SQLWizard</button>
                     </div>
                 </div>
-        </div>
-                
-            <!-- View Progress Card -->
-        <div class="col-md-4">
-                <div class="card card-custom mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">View Progress</h5>
-                        <p class="card-text">Check out your learning progress and achievements.</p>
-                        <button id="view-progress-btn" class="btn btn-primary">View Progress</button>                    </div>
+            </div>
+            <div id="loading-indicator" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <!-- <span class="sr-only">Loading...</span> -->
                 </div>
-        </div>    
+                <p class="mb-0 mt-2">Loading...</p>
+            </div>
+
+            <!-- Practice SQL Card -->
+            <div class="col-md-3">
+                    <div class="card card-custom mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Practice SQL</h5>
+                            <p class="card-text">Hone your skills with hands-on SQL practice.</p>
+                            <button id = "practice-sql-button" class = "btn btn-primary">Practice SQL</button>
+                        </div>
+                    </div>
+            </div>
+                    
+                <!-- View Progress Card -->
+            <div class="col-md-3">
+                    <div class="card card-custom mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">View Progress</h5>
+                            <p class="card-text">Check out your learning progress and achievements.</p>
+                            <button id="view-progress-btn" class="btn btn-primary">View Progress</button>                    </div>
+                    </div>
+            </div>    
+            
             
             <!-- Completed Topics Card -->
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card card-custom mb-3">
                     <div class="card-body">
                         <h5 class="card-title">Completed Topics</h5>
                         <p class="card-text">Review the topics you've mastered.</p>
-                        <button id="completed-topics-button" class="btn btn-primary">Display Completed Topics</button>
+                        <button id="completed-topics-button" class="btn btn-primary">View Completed Topics</button>
                     </div>
                 </div>
             </div>
 
             <!-- Quit Card -->
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card card-custom mb-3">
                     <div class="card-body">
                         <h5 class="card-title">Quit Session</h5>
@@ -222,54 +337,45 @@
                     </div>
                 </div>
             </div>
+            
+
+
         
-    </div>
-
-    
-    <div class = "completed-topics-text-container"></div>
-    <!-- for rendering graph -->
-        <canvas id="progress-chart" width="400" height="50"></canvas> 
-
-        <!-- Add a Finish Topic button and a hidden form for confidence score submission -->
-        <div id="finish-topic-container" style="display:none;">
-            <button id="finish-topic-btn" class="btn btn-primary">Finish Topic</button>
-            <div id="confidence-form" style="display:none;">
-                <label for="confidence-score">How confident are you in this topic? (1-5)</label>
-                <input type="number" id="confidence-score" min="1" max="5" required>
-                <button onclick="submitConfidenceScore()">Submit Confidence Score</button>
+      
+            <!-- Add a Finish Topic button and a hidden form for confidence score submission -->
+            <div id="finish-topic-container" style="display:none;">
+                <button id="finish-topic-btn" class="btn btn-primary">Finish Topic</button>
+                <div id="confidence-form" style="display:none; margin-top: 0.7rem;">
+                    <label for="confidence-score">How confident are you in this topic? (1-5)</label>
+                    <input type="number" id="confidence-score" min="1" max="5" required>
+                    <button class = "btn btn-primary" onclick="submitConfidenceScore()">Submit Confidence Score</button>
+                </div>
             </div>
-        </div>
 
+           
 
-        <div id="loading-indicator" style="display: none;">
-            <div class="spinner-border text-primary" role="status">
-                <!-- <span class="sr-only">Loading...</span> -->
+            <div class = "completed-topics-text-container">
+
             </div>
-            <p class="mb-0 mt-2">Loading...</p>
+            <!-- for rendering graph -->
+        
+            <div id = "progress-chart-container">
+                <canvas id="progress-chart" width="400" height="50"></canvas>
+            </div>
+
+            
+
+
+        
         </div>
     </div>
-    </div>
         
-        
-
-        
-
-    
-        <!-- <div class = "quit-container">
-            <button id="quit-button" class="btn btn-danger">Quit</button>
-        </div> -->
-
-        
-
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
     <script>
-        let topic_exists = 0;
-
+        // let topic_exists = 0;
         setInterval(highlightAll, 1000);
         function highlightAll() {
             document.querySelectorAll("pre code").forEach(block => {
@@ -307,13 +413,15 @@
                 .then(response => response.json())
                 .then(data => {
                     if(data.classifier_failed){
-                        addMessage("There was an error processing your question. Please try again.", false);
+                        addMessage("There was an error processing your question. Please try quitting session and logging back in.", false);
                         hideLoadingIndicator();
                         return; 
                     }
                     if (!data.is_sql) {
                         // If the response indicates the question is not related to SQL
-                        addMessage("Please ask questions related to SQL.", false);
+                        const nonSQLRelatedMessage = "Please ask questions related to SQL. Note: If your prompt is SQL-related, and you are still getting this message, please try rephrasing your prompt.\n\nHere are a few things you can do:\n1) if you are referencing an SQL query, try writing 'in the above SQL query'\n2) try appending 'in SQL' at the end of your prompt";
+
+                        addMessage(nonSQLRelatedMessage, false);
                         hideLoadingIndicator();
                         return; 
                     }
@@ -384,14 +492,13 @@
             .catch(error => console.error('Error:', error));
         }
 
-        function handleUserChoice() {
+        async function handleUserChoice() {
             const choice = document.getElementById("user-choice").value;
             const userPreferences = document.getElementById("user-preferences");
             const chatContainer = document.getElementById("chat-container");
 
             const topicSelectionDiv = document.getElementById("topic-selection");
             const chatInput = document.getElementById('chat-input');
-            console.log(choice);
 
             switch (choice) {
                 case "select_topic":
@@ -415,9 +522,9 @@
                     showLoadingIndicator();
                     addMessage("Please wait while I generate an overview for you...");
                     //userPreferences.style.display = 'none';
-                    
+                    chatInput.disabled = true;
+                    await fetchOverview();
                     chatInput.disabled = false;
-                    fetchOverview();
                     hideLoadingIndicator();
                     break;
 
@@ -426,11 +533,21 @@
             }
         }
 
-        function fetchOverview(){
-            fetch("/generate_sql_overview")
-            .then(response => response.json())
-            .then(data => addMessage(data.overview, false))
-            .catch(error => console.error('Error:', error));
+        // function fetchOverview(){
+        //     fetch("/generate_sql_overview")
+        //     .then(response => response.json())
+        //     .then(data => addMessage(data.overview, false))
+        //     .catch(error => console.error('Error:', error));
+        // }
+        async function fetchOverview() {
+            try {
+                const response = await fetch("/generate_sql_overview");
+                const data = await response.json();
+                addMessage(data.overview, false);
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage("Failed to fetch overview. Please try again.", false);
+            }
         }
         
         function clearChat() {
@@ -447,7 +564,7 @@
                 clearChat();
                 addMessage("Please wait while I generate a summary for you ...")
                 // Hide the user preferences and topic selection while loading
-                document.getElementById('user-preferences').style.display = 'none';
+                document.getElementById('user-preferences-div').style.display = 'none';
                 document.getElementById('topic-selection').style.display = 'none';
                 document.getElementById('finish-topic-container').style.display = 'none'; // Initially hide the Finish Topic button
 
@@ -469,7 +586,7 @@
                 .catch(error => {
                     console.error('Error:', error);
                     // Show the user preferences and topic selection again if there was an error
-                    document.getElementById('user-preferences').style.display = 'block';
+                    document.getElementById('user-preferences-div').style.display = 'block';
                     document.getElementById('topic-selection').style.display = 'block';
                 });
             }
@@ -507,9 +624,11 @@
                     // Reset the form and re-enable the user preferences for next topic selection
                     displaySuggestedTopics();
                     document.getElementById('confidence-form').style.display = 'none';
-                    document.getElementById('user-preferences').style.display = 'block';
+                    document.getElementById('user-preferences-div').style.display = 'block';
                     document.getElementById('topic-selection').style.display = 'none';
-                    topic_exists = 1;
+                    document.getElementById('finish-topic-container').style.display = 'none';
+
+                    // topic_exists = 1;
                     document.getElementById('chat-input').disabled = true; // Keep chat input disabled until a new selection is made
                 })
                 .catch(error => console.error('Error:', error));
@@ -526,7 +645,7 @@
             })
             .then(data => {
                 const suggestionsDiv = document.getElementById("suggestions-div");
-                suggestionsDiv.innerHTML = '<strong>Suggested Topics: </strong><br>'; // Clear existing suggestions
+                suggestionsDiv.innerHTML = '<h4>Suggested Topics: </h4>'; // Clear existing suggestions
                 
                 // Assuming `data` is an array of objects with `Concept` and `Operation Name` keys
                 const groupedByOperation = data.reduce((acc, topic) => {
@@ -631,60 +750,82 @@
             if(!prerequisite){
                 prerequisiteDiv.innerHTML = ``; //for SQL basics as topic
             }
-            prerequisiteDiv.innerHTML = `<strong>Prerequisite: </strong>${prerequisite}`;
+            prerequisiteDiv.innerHTML = `<h4>Prerequisite: </h4>${prerequisite}`;
         }
+        
+        let progressChart;
 
         document.getElementById('view-progress-btn').addEventListener('click', function() {
-            fetch('/view_progress')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok: ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(graphData => {
-                    const ctx = document.getElementById('progress-chart').getContext('2d');
-                    const progressChart = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: graphData.operations,
-                            datasets: [
-                                {
-                                label: 'Completed Topics',
-                                data: graphData.completedTopics,
-                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                                borderColor: 'rgba(75, 192, 192, 1)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: 'Total Topics',
-                                data: graphData.totalTopics,
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            
-                            indexAxis: 'y', //horizontal bar
-                            scales: {
-                                x: {
-                                    ticks: {
-                                        beginAtZero: true
-                                    }
-                                },
-                                // y: {
-                                // }
-                            },
-                            responsive: true,
-                            maintainAspectRatio: true,
-                            aspectRatio:2
+            const button = this;
+            const progressChartCanvas = document.getElementById('progress-chart');
+
+            if(button.textContent.includes('View Progress')){
+
+                fetch('/view_progress')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.statusText);
                         }
+                        return response.json();
+                    })
+                    .then(graphData => {
+                        const ctx = document.getElementById('progress-chart').getContext('2d');
+                        progressChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: graphData.operations,
+                                datasets: [
+                                    {
+                                    label: 'Completed Topics',
+                                    data: graphData.completedTopics,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Total Topics',
+                                    data: graphData.totalTopics,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                
+                                indexAxis: 'y', //horizontal bar
+                                scales: {
+                                    x: {
+                                        ticks: {
+                                            beginAtZero: true
+                                        }
+                                    },
+                                    // y: {
+                                    // }
+                                },
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                aspectRatio:2
+                            }
+                        });
+                        button.textContent = 'Hide Progress';
+                        button.classList.remove('btn-primary');
+                        button.classList.add('btn-danger');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                     });
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
+            }
+            else{
+                if (progressChart) {
+                    progressChart.destroy(); // This is how you would normally clear a Chart.js chart
+                }
+                document.getElementById("progress-chart").innerHTML = ''; // Clear any residual markup
+
+                // Change button back to blue and text to 'View Progress'
+                button.textContent = 'View Progress';
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-primary');
+            }
         });
 
 
@@ -708,11 +849,27 @@
                     chatInput.disabled = true;
                     document.getElementById('finish-topic-container').style.display = 'none';
                     document.getElementById('gpt-button').disabled = true;
-                    document.getElementById('quit-button').style.display = 'none';
-                    let message = "Session ended. Thank you for using SQLWizard!";
-                    if(topic_exists)
-                        message = message + "You learned the following topics: " + learnedTopics.join(','); 
-                    addMessage(message, false);
+                    document.getElementById('quit-button').disabled = true;
+                    // let message = "Session ended. Thank you for using SQLWizard!";
+                    // if(topic_exists)
+                    //     message = message + "You learned the following topics: " + learnedTopics.join(','); 
+                    // addMessage(message, false);
+
+                    // clearChat();
+                    let message = "<div class='session-ended-message'> Session ended. Thank you for using SQLWizard!</div>";
+                    if(learnedTopics.length > 0) {
+                        message += "<div class='session-ended-message'> You learned the following topics: " + learnedTopics.join(', ') + "</div>";
+                    }
+                    console.log(message);
+                    
+
+                    // Change the content of the card body to the end session message
+                    const cardBody = document.querySelector('.card-body'); // Make sure this selector targets the correct card
+                    const chatContainer = document.querySelector('#chat-container');
+                    document.querySelector('.user-preferences-div')
+                    chatContainer.innerHTML = message;
+                    cardBody.innerHTML = message;
+
                 }).catch(error => {
                     console.error("Error ending session:", error);
                 });            
@@ -727,12 +884,16 @@
             const messageType = isUser ? 'user-message' : 'bot-message';
             const logoURL = isUser ? "{{ url_for('static', filename='user.png') }}" : "https://digital-practice.ams3.cdn.digitaloceanspaces.com/static%2Fapp%2Fimg%2Fopenai-logo.png";
             // Check if the content has code block
-            const hasCodeBlock = message.includes("```");
             let formattedMessage = message;
 
-            if (hasCodeBlock) {
-                formattedMessage = formatBotResponse(message);
-            }
+            // formattedMessage = formatBotResponse(formattedMessage);
+            formattedMessage = formatGPTResponse(formattedMessage);
+            formattedMessage = formatGPTResponseToHTMLTable(formattedMessage);
+
+            console.log(formattedMessage);
+                
+            
+            
 
             let html_data = `
                  <div class="list-group-item d-flex gap-3 py-3 ${messageType}">
@@ -742,7 +903,7 @@
                                 <p class="mb-0 opacity-75">${formattedMessage}</p>
                             </div>
                         </div>
-                </div   >
+                </div>
             `;
             
             document.querySelector('#list-group').insertAdjacentHTML('beforeend', html_data);
@@ -751,16 +912,104 @@
             // if isUser is true, append to the role user message, else append to role assistant message
         }
 
+        function formatGPTResponse(message) {
+            // Split the message by new lines to identify paragraphs and lists
+            const messageLines = message.split('\n');
+            let formattedMessage = '';
+
+            messageLines.forEach((line) => {
+                // Check if the line is a list item starting with a number followed by a period (e.g., "1. ")
+                if (/^\d+\.\s/.test(line)) {
+                    // Add a line break before list items except for the first
+                    if (formattedMessage.length > 0) {
+                        formattedMessage += '<br>';
+                    }
+                    formattedMessage += line;
+                } else {
+                    // Wrap non-list lines in paragraph tags
+                    formattedMessage += `<p>${line}</p>`;
+                }
+            });
+
+            return formattedMessage;
+        }
+
+        function formatGPTResponseToHTMLTable(content) {
+            // Split the content by line breaks
+            const lines = content.split('\n');
+            let tableHTML = '<table>';
+
+            lines.forEach(line => {
+                // Check if the line is a table row
+                if (line.trim().startsWith('|')) {
+                    console.log("in table formatting")
+                // Remove leading and trailing pipes, then split by pipe separator
+                const rowData = line.trim().slice(1, -1).split('|');
+                
+                // Start a table row
+                tableHTML += '<tr>';
+                
+                // For each cell in the row data, add a table cell
+                rowData.forEach(cell => {
+                    tableHTML += `<td>${cell.trim()}</td>`;
+                });
+                
+                // End the table row
+                tableHTML += '</tr>';
+                } 
+                else {
+                    console.log(":(")
+                // If the line is not a table row, it's a regular text. Wrap it with <p>
+                tableHTML += `<p>${line}</p>`;
+                }
+            });
+
+            // Close the table tag
+            tableHTML += '</table>';
+            tableHTML = `<div class="gpt-response-table">${tableHTML}</div>`;
+
+            
+            return tableHTML;
+        }
 
         //function to format any SQL code 
 
 
+        // function formatBotResponse(content) {
+        //     // content = content.replace(/• /g, '<br>• ');
+        //     console.log("reached in formatting function for SQL :)")
+        //     content = content.replace(/```([\s\S]+?)```/g, '</p><br><pre><code>$1</code></pre><br><p>');
+        //     return content;
+        // }
+        // function formatBotResponse(content) {
+        //     console.log("Reached in formatting function for SQL :)", content);
+
+        //     // Handle line breaks for SQL code explicitly
+        //     if (content.trim().startsWith('sql')) {
+        //         content = content.replace(/^sql/g, '').trim(); // Remove the 'sql' prefix
+        //         content = `<pre><code>${content}</code></pre>`; // Wrap the SQL code with pre and code tags
+        //     } else {
+        //         content = content.replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>');
+        //     }
+
+        //     console.log("Formatted content:", content);
+        //     return content;
+        // }
         function formatBotResponse(content) {
-            content = content.replace(/• /g, '<br>• ');
-            
-            content = content.replace(/```([\s\S]+?)```/g, '</p><br><pre><code>$1</code></pre><br><p>');
-            return content;
-        }
+    // Define SQL keywords to look for
+    const sqlKeywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'ON', 'AND', 'OR', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE'];
+    const regexPattern = new RegExp(`\\b(${sqlKeywords.join('|')})\\b`, 'g');
+
+    // Insert a line break before each capitalized SQL keyword
+    content = content.replace(regexPattern, (match) => `<br>${match}`);
+
+    // Wrap SQL code with pre and code tags if it's contained within a code block
+    content = content.replace(/```([\s\S]+?)```/g, (match, code) => `<pre><code>${code}</code></pre>`);
+
+    return content;
+}
+
+
 
         //Function to show loading indicator
         function showLoadingIndicator() {
@@ -780,19 +1029,41 @@
         window.onload = function() {
         const completedTopicsButton = document.getElementById('completed-topics-button');
         if (completedTopicsButton) {
+
             completedTopicsButton.addEventListener('click', function() {
             // fetch and display completed topics
-            fetch('/display_completed_topics')
-                .then(response => response.json())
-                .then(data => {
-                // Call a function to render data
-                renderCompletedTopics(data);
-                })
-                .catch(error => {
-                console.error('Error:', error);
-                });
+
+            if(completedTopicsButton.textContent.includes('View Completed Topics')){
+                fetch('/display_completed_topics')
+                    .then(response => response.json())
+                        .then(data => {
+                        // Call a function to render data
+                        renderCompletedTopics(data);
+                        completedTopicsButton.textContent = 'Hide Completed Topics';
+                        completedTopicsButton.classList.remove('btn-primary');
+                        completedTopicsButton.classList.add('btn-danger');
+                        })
+                        .catch(error => {
+                        console.error('Error:', error);
+                        });
+            }
+            else{
+                const container = document.querySelector(".completed-topics-text-container");
+                container.innerHTML = '';
+                completedTopicsButton.textContent = 'View Completed Topics';
+                completedTopicsButton.classList.remove('btn-danger');
+                completedTopicsButton.classList.add('btn-primary');
+
+
+            }
+
+
             });
-        } else {
+
+        } 
+        
+        
+        else {
             console.error('completed-topics-button element not found');
         }
 
@@ -807,7 +1078,7 @@
                 tableHtml += '</table>';
                 container.innerHTML = tableHtml;
             } else {
-                container.innerHTML = '<p>No completed topics to display.</p>';
+                container.innerHTML = '<p class = "no-topics-message">No completed topics to display.</p>';
             }
         }
 

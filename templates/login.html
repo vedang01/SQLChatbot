@@ -79,17 +79,29 @@
           color: #666;
         }
 
+      
+
+
         #message {
-          text-align: center; /* Center the text */
-          margin-top: 20px; /* Add some space above the message container */
-          height: 50px; /* Give it a fixed height */
+          color: #D8000C; /* Red color for error messages */
+          background-color: #FFD2D2; /* Light red background */
+          margin: 20px 0; /* Add some margin above and below the message box */
+          padding: 10px; /* Add some padding inside the message box */
+          border: 1px solid #D8000C; /* A solid border that matches the text color */
+          border-radius: 5px; /* Rounded corners for a smoother look */
+          text-align: center; /* Align text to the left */
+          width: 100%; /* Ensure it spans the full width of its container */
+          box-sizing: border-box; /* Include padding and border in the element's total width and height */
+          display: none;
+          font-size: 0.8rem;
+          
         }
 
-        .error-message {
-          color: red;
-          font-size: 1em; /* Use em for scalable font size */
-          font-weight: bold; /* Make it bold for better visibility */
-          padding: 5px 0; /* Add some padding */
+        /* Optional: Add a pseudo-element for an error icon */
+        #message:before {
+          content: "\26A0"; /* Unicode character for warning sign */
+          padding-right: 5px; /* Add some space between the icon and the text */
+          font-weight: bold; /* Make the warning sign bold */
         }
 
         
@@ -106,18 +118,18 @@
 
 <head>
     <title>Sign In</title>
-    <!-- <link rel="stylesheet" type="text/css" href="styles.css"> -->
   </head>
   <body>
     <div class="form-container">
       <h2>SQL Wizard</h2>
+      <div id="message" class="message-container"></div>
+
       <form id="signin-form">
         <input type="text" placeholder="Username" class="input-field" name="username">
         <input type="password" placeholder="Password" class="input-field" name="password">
         <button type="submit" class="submit-button">Sign In</button>
       </form>
       <p>Don't have an account? <a href="/register">Sign Up</a></p>
-      <div id="message" class="message-container"></div>
     </div>
   
     <script>
@@ -153,17 +165,24 @@
   })
   .catch(error => {
     console.error('Error:', error);
+    if (error.message) {
+    // If the error response contains a data.message, display it as an error message
+      showErrorMessage(error.message);
+    } else {
+      // If the error does not contain a detailed message, display a generic error message
+      showErrorMessage('Login failed due to a server error. Please try again later.');
+    }
   });
 });
   
       function showErrorMessage(message) {
-          console.log("Error Message Function Called: ", message); // Debugging line
 
         const messageContainer = document.getElementById('message');
         // Ensure the message container exists
         if (messageContainer) {
           // Set the innerHTML of the message container to show the error message
-          messageContainer.innerHTML = `<p class="error-message">${message}</p>`;
+          messageContainer.style.display = "block"; // Make the message visible
+          messageContainer.innerHTML = message;
         } else {
           // If the message container doesn't exist, log an error or handle accordingly
           console.error("The message container doesn't exist.");

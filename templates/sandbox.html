@@ -13,10 +13,17 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
     <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
     <style>
+
+        body{
+            font-size: 16px;
+            background-color: #f1f1f1;
+
+        }
         #sql-query { 
-            width: 100%;
+            width: 60%;
             min-height: 150px;
-            margin-bottom: 10px;
+            margin-bottom: 1rem;
+            margin-top: 1rem;
         }
         .dataTables_wrapper {
             margin-top: 20px;
@@ -24,38 +31,105 @@
         .query-results-container {
             margin-top: 20px;
         }
+
+        /* Intro text styling */
+        .intro-text {
+            background-color: #fff; /* White background */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 1rem; /* Padding inside the container */
+            margin: 20px auto; /* Center the container with automatic horizontal margins */
+            max-width: 100rem; /* Maximum width with centered content */
+            font-family: 'Arial', sans-serif; /* Font family */
+            color: #333; /* Text color */
+        }
+
+        .intro-text p {
+            margin: 0; /* Remove default paragraph margin */
+            font-size: 1rem; /* Font size */
+            line-height: 1.5; /* Line height for better readability */
+            text-align: center; /* Center the text */
+        }
+
+
+        /* Table name styling */
+        .table-name {
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-top: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        #run-query-btn{
+            margin-bottom: 0.4rem;
+        }
+
+        .query-block{
+            margin-top: 4rem;
+        }
+
+        #message {
+            color: #D8000C; /* Red color for error messages */
+            background-color: #FFD2D2; /* Light red background */
+            margin: 20px 0; /* Add some margin above and below the message box */
+            padding: 10px; /* Add some padding inside the message box */
+            border: 1px solid #D8000C; /* A solid border that matches the text color */
+            border-radius: 5px; /* Rounded corners for a smoother look */
+            text-align: center; /* Align text to the left */
+            width: 100%; 
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            display: none;
+            font-size: 0.8rem;
+            height: 100%;
+        
+        }
+
+        #message:before {
+            content: "\26A0"; /* Unicode character for warning sign */
+            padding-right: 5px; /* Add some space between the icon and the text */
+            font-weight: bold; /* Make the warning sign bold */
+        }
+
+    
     </style>
 </head>
+
+
 <body class = "bg-light">
     <h1 class="text-center mb-3">Sandbox Mode</h1>
-    <p class="text-center">Welcome to Sandbox! Below are three tables for practice. You may execute READONLY queries on these tables and see the output.</p>
-
+    <div class="intro-text text-center">
+        <p>Welcome to Sandbox! You may only execute READ-ONLY queries on the three tables below.</p>
+    </div>
 
     
     {% for table_name, table_info in tables_data.items() %}
-        <h3>{{ table_name }}</h3>
-        <table id="{{ table_name }}-table" class="display">
-            <thead>
-                <tr>
-                    {% for column in table_info.columns %}
-                        <th>{{ column }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in table_info.rows %}
+        <h3 class="table-name">{{ table_name | capitalize }}</h3> <!-- Capitalize table name -->
+        <div class="table-container" id="table-container-{{table_name}}">
+            <table id="{{ table_name }}-table" class="display">
+                <thead>
                     <tr>
-                        {% for cell in row %}
-                            <td>{{ cell }}</td>
+                        {% for column in table_info.columns %}
+                            <th>{{ column }}</th>
                         {% endfor %}
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for row in table_info.rows %}
+                        <tr>
+                            {% for cell in row %}
+                                <td>{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% endfor %}
 
-    <textarea id="sql-query" class="form-control" placeholder="Enter your SQL query here"></textarea>
-    <button onclick="executeQuery()" class="btn btn-primary mt-2">Run Query</button>
+    <p class="query-block">Enter your SQL Query in the space below.</p>
+    <textarea id="sql-query" class="form-control" placeholder="Your SQL Query"></textarea>
+    <div id="message"></div>
+    <button onclick="executeQuery()" class="btn btn-primary mt-2" id="run-query-btn">Run Query</button><br>
     <a href="/home" class="btn btn-primary">Back</a>
 
     <div id="query-results" class="query-results-container"></div>
@@ -83,7 +157,9 @@
             .then(data => {
                 if (data.error) {
                     // Display error
-                    document.getElementById("query-results").innerText = "Error: " + data.error;
+
+                    document.getElementById("message").style.display = 'block';
+                    document.getElementById("message").innerText = "Error: " + data.error;
                 } else {
                     // Format and display data
                     $(document.getElementById("query-results")).html('<table id="result-table" class="display table table-striped table-bordered"></table>');
@@ -121,6 +197,9 @@
             html += '</tbody></table>';
             return html;
         }
+
+        
+
 
     </script>
 </body>

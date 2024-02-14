@@ -10,7 +10,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 110vh;
+  font-size: 100%;
 }
 
 .form-container {
@@ -20,6 +20,11 @@ body {
   width: 500px;
   padding: 40px 50px 0px 30px;
   text-align: center;
+  margin: 10px;
+}
+
+#message{
+  font-size: 1rem;
 }
 
 h2 {
@@ -34,12 +39,14 @@ h2 {
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: #f9f9f9;
-  font-size: 16px;
+  font-size: 1rem;
+  margin-top: 5px;
 }
 
 .input-field::placeholder {
   color: #999;
 }
+
 
 .submit-button {
   background-color: #007bff;
@@ -48,7 +55,7 @@ h2 {
   padding: 12px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 1rem;
   width: 100%;
   margin: 20px 0px 6px 9px;
 
@@ -67,9 +74,9 @@ a:hover {
   text-decoration: underline;
 }
 
-p {
+#login {
   margin-top: 20px;
-  font-size: 14px;
+  font-size: 0.7rem;
   color: #666;
 }
 
@@ -78,33 +85,81 @@ p {
     width: 90%;
   }
 }
+#message {
+  color: #D8000C; /* Red color for error messages */
+  background-color: #FFD2D2; /* Light red background */
+  margin: 20px 0; /* Add some margin above and below the message box */
+  padding: 10px; /* Add some padding inside the message box */
+  border: 1px solid #D8000C; /* A solid border that matches the text color */
+  border-radius: 5px; /* Rounded corners for a smoother look */
+  text-align: center; /* Align text to the left */
+  width: 100%; /* Ensure it spans the full width of its container */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  display: none;
+  font-size: 0.8rem;
+  height: 100%;
+  
+}
+
+/* Optional: Add a pseudo-element for an error icon */
+#message:before {
+  content: "\26A0"; /* Unicode character for warning sign */
+  padding-right: 5px; /* Add some space between the icon and the text */
+  font-weight: bold; /* Make the warning sign bold */
+}
+
+#error-message{
+  display: inline;
+}
+
+.success-message {
+  color: #4BB543; /* Green color for success messages */
+  background-color: #D4EDDA; /* Light green background */
+  margin: 20px 0; /* Add some margin above and below the message box */
+  padding: 10px; /* Add some padding inside the message box */
+  border: 1px solid #4BB543; /* A solid border that matches the text color */
+  border-radius: 5px; /* Rounded corners for a smoother look */
+  text-align: center; /* Align text to the center */
+  width: 100%; /* Ensure it spans the full width of its container */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  display: none; /* Initially hidden */
+  font-size: 0.8rem;
+}
+
+.success-message:before {
+  content: "\2713"; /* Unicode character for a check mark */
+  padding-right: 5px; /* Add some space between the icon and the text */
+  font-weight: bold; /* Make the check mark bold */
+}
+
+
 
 </style>
 
 <head>
   <title>Register for SQL Wizard</title>
-  <!-- <link rel="stylesheet" type="text/css" href="styles.css"> -->
 </head>
 <body>
   <div class="form-container">
     <div id="message" class="message-container"></div> 
+    <div id="success"></div> 
     <h2>Sign Up</h2>
     <form id="signup-form">
-        <label class="radio-label">First Name: </label>
+        <label class="radio-label" for="first_name">First Name: </label>
         <input type="text" placeholder="First Name" name = "first_name" class="input-field" required>
-        <label class="radio-label">Last Name: </label>
+        <label class="radio-label" for="last_name">Last Name: </label>
         <input type="text" placeholder="Last Name" name = "last_name" class="input-field">
-        <label class="radio-label">Age: </label>
+        <label class="radio-label" for="age">Age: </label>
         <input type="number" placeholder="Age" name = "age" class="input-field" required>
-        <label class="radio-label">Username:</label>
+        <label class="radio-label" for="username">Username:</label>
         <input type="text" placeholder="Username" name = "username" class="input-field" required>
-        <label class="radio-label">Password:</label>
+        <label class="radio-label" for="password">Password:</label>
         <input type="password" placeholder="Password" name = "password" class="input-field" required>
-        <label class="radio-label">Confirm Password:</label>
+        <label class="radio-label" for="confirm_password">Confirm Password:</label>
         <input type="password" placeholder="Confirm Password" name = "confirm_password" class="input-field" required>
-        <label class="radio-label">Profession:</label>
+        <label class="radio-label" for="profession">Profession:</label>
         <input type="text" placeholder="Profession" name = "profession" class="input-field" required>
-        <label class="radio-label">Why do you want to learn SQL?</label>
+        <label class="radio-label" for="reason">Why do you want to learn SQL?</label>
         <input type="text" placeholder="Reason" name = "reason" class="input-field" required>
         
         <div class="radio-group">
@@ -118,7 +173,7 @@ p {
         </div>
         <button type="submit" class="submit-button">Sign Up</button>
       </form>
-    <p>Already have an account? <a href="/login">Sign In</a></p>
+    <p id="login">Already have an account? <a href="/login">Sign In</a></p>
   </div>
 
   <script>
@@ -134,17 +189,22 @@ p {
   
         // Simple client-side validation for password match
      if (formDataJSON.password !== formDataJSON.confirm_password) {
-                showErrorMessage('Passwords do not match.');
-                return;
-            }
+            document.getElementById("message").style.display = "block";
+
+            showErrorMessage('Passwords do not match.');
+            return;
+      }
                 // Check if age is a positive integer
-     if (!Number.isInteger(+formDataJSON.age) || +formDataJSON.age <= 0) {
-     showErrorMessage('Please enter a valid positive integer for age.');
+     if (!Number.isInteger(+formDataJSON.age) || +formDataJSON.age <= 0 || +formDataJSON.age >120) {
+      document.getElementById("message").style.display = "block";
+
+     showErrorMessage('Please enter a valid age.');
      return;
      }
       
      // Check if first name or last name contain numbers
      if (/\d/.test(formDataJSON.first_name) || /\d/.test(formDataJSON.last_name)) {
+      document.getElementById("message").style.display = "block";
      showErrorMessage('Names cannot contain numbers.');
      return;
      }
@@ -179,21 +239,32 @@ p {
             })
             .catch(error => {
                 console.error('Error:', error);
+                
+                if (error.message) {
+                    // If the error response contains a data.message, display it as an error message
+                    showErrorMessage(error.message);
+                } else {
+                    // If the error does not contain a detailed message, display a generic error message
+                    showErrorMessage('Registration failed due to a server error. Please try again later.');
+                }
             });
         });
   
     function showErrorMessage(message) {
             const messageContainer = document.getElementById('message');
             if (messageContainer) {
-                messageContainer.innerHTML = `<p class="error-message">${message}</p>`;
+              messageContainer.style.display = "block";
+                messageContainer.innerHTML = `${message}`;
             } else {
                 console.error("The message container doesn't exist.");
             }
         }
     function showSuccessMessage(message) {
-            const messageContainer = document.getElementById('message');
+            const messageContainer = document.getElementById('success');
             if (messageContainer) {
-                messageContainer.innerHTML = `<p class="success-message">${message}</p>`;
+              messageContainer.style.display = "block"; // Make sure to display the container
+              messageContainer.className = 'success-message'; // Apply the success-message class
+              messageContainer.innerHTML = `${message}`;
             } else {
                 console.error("The message container doesn't exist.");
             }

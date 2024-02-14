@@ -26,7 +26,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY")
 conversation_history = [
     {
         "role": "system",
-        "content": "You are a Personalized SQL Teacher with expertise in andragogical practices. Your primary goals are to be polite, provide comprehensive answers with relevant examples, and display data tables in tabular format for easy interpretation by the user. Whenever a user asks to practice, you will create suitable tables with appropriate attributes and data. Then, you'll display them in tabular form and generate relevant questions to test the user's understanding. DO NOT show the answers while displaying questions;let the users give answers. It's essential to verify and provide feedback on the answers given by the user.",
+        "content": "You are a Personalized SQL Teacher with expertise in andragogical practices. Your primary goals are to be polite, provide comprehensive answers with relevant examples, and display data tables in tabular format for easy interpretation by the user. Whenever a user asks to practice, you will create suitable tables with appropriate attributes and data. Then, you'll display them in tabular form and generate relevant questions to test the user's understanding. DO NOT show the answers while displaying questions;let the users give answers. It's essential to verify and provide feedback on the answers given by the user. If you wish to display a table, format as an HTML table(IMPORTANT)",
     }
 ]
 
@@ -41,10 +41,10 @@ def generateChatResponse(prompt, topic=""):
 
     # If user wants to learn about a specific topic
     if topic:
-        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Give a brief summary along with an example."
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Give a brief summary along with an example. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format."
     else:
         # Personalize the prompt with the user's details
-        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}"
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format."
 
     # Include the personalized prompt in the conversation history
     session["conversation_history"].append(
@@ -74,16 +74,28 @@ def generateChatResponse(prompt, topic=""):
 
 # Separate function for GPT-3 response
 def isSQLrelated(prompt):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "system",  ##you can improve this classifier
-                "content": "You are an AI trained to classify 'user' prompt as SQL-related or not. A prompt is considered SQL-related if it pertains to database queries, SQL commands, data manipulation or retrieval, table structure, or SQL functions. Non-SQL related prompts include general programming questions, non-technical queries and personal opinions. Respond 'yes' if the prompt is classified as SQL related; otherwise, respond 'no'. When in doubt, classify prompt as SQL-related.",
-            },
-            {"role": "user", "content": prompt},  # Current prompt to classify
-        ],
-    )
+    # response = openai.ChatCompletion.create(
+    #     model="gpt-3.5-turbo",
+    #     messages=[
+    #         {
+    #             "role": "system",  ##you can improve this classifier
+    #             "content": "You are an AI trained to classify 'user' prompt as SQL-related or not. A prompt is considered SQL-related if it pertains to database queries, SQL commands, data manipulation or retrieval, table structure, or SQL functions. Non-SQL related prompts include general programming questions, non-technical queries and personal opinions. Please take a note of the conversation history while classifying. Respond 'yes' if the prompt is classified as SQL related; otherwise, respond 'no'. When in doubt, classify prompt as SQL-related.",
+    #         },
+    #         {"role": "user", "content": prompt},  # Current prompt to classify
+    #     ],
+    # )
+
+    messages = session.get("conversation_history", []) + [
+        {
+            "role": "system",
+            "content": "You are an AI trained to classify 'user' prompt as SQL-related or not. A prompt is considered SQL-related if it pertains to database queries, SQL commands, data manipulation or retrieval, table structure, or even general data-related questions and examples. If a prompt is a follow up to an SQL related prompt, then it is SQL related as well. Non-SQL related prompts are those that clearly deviate from SQL and data, including general questions, non-technical queries, and personal opinions. Please make sure to have a look at the whole conversation history before classifying as Non-SQL related. The conversation might suggest that the user prompt is simply a follow up response. In that case, it is SQL-related. Respond 'yes' if the prompt is classified as SQL related; otherwise, respond 'no'. When in doubt, classify prompt as SQL-related. Most(99%) prompts will be classified as SQL-related.",
+            # "role": "system",
+            # "content": "You are an AI designed to determine if a user's prompt is related to SQL. Consider the entire conversation history to understand the context. A prompt is SQL-related if it involves SQL syntax, database queries, data manipulation, retrieval, table creation, table structures, or general table/database questions. If a prompt is a follow-up within a SQL discussion, it should be considered SQL-related. Only classify a prompt as non-SQL if it clearly deviates from these topics or is explicitly non-technical or personal. In cases where the context isn't clear, err on the side of classifying the prompt as SQL-related, as most exchanges are expected to be about SQL. Respond 'yes' if the prompt is classified as SQL related; otherwise, respond 'no'.",
+        },
+        {"role": "user", "content": prompt},  # Current prompt to classify
+    ]
+
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
 
     try:
         answer = response.choices[0].message.content
@@ -151,7 +163,7 @@ def index():
 
 @app.route("/generate_sql_overview")
 def generate_sql_overview():
-    overview_prompt = "Generate an overview for SQL. Do not go into the technical details, just mention the use of SQL, how it fits in the technological landscape, and other relevant information."
+    overview_prompt = "Generate a beginner-friendly introduction to SQL. Explain the use of SQL, and how it fits in the technological landscape. Do not add technical jargon or any SQL commands. Format your response beautifully in HTML. Add line breaks and new lines."
     return jsonify({"overview": generateChatResponse(overview_prompt)})
 
 
