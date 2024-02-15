@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-
+<head>
     <style>
 
         body {
@@ -79,29 +79,25 @@
           color: #666;
         }
 
-      
-
-
         #message {
-          color: #D8000C; /* Red color for error messages */
-          background-color: #FFD2D2; /* Light red background */
-          margin: 20px 0; /* Add some margin above and below the message box */
-          padding: 10px; /* Add some padding inside the message box */
-          border: 1px solid #D8000C; /* A solid border that matches the text color */
-          border-radius: 5px; /* Rounded corners for a smoother look */
-          text-align: center; /* Align text to the left */
-          width: 100%; /* Ensure it spans the full width of its container */
-          box-sizing: border-box; /* Include padding and border in the element's total width and height */
+          color: #D8000C;
+          background-color: #FFD2D2; 
+          margin: 20px 0; 
+          padding: 10px; 
+          border: 1px solid #D8000C; 
+          border-radius: 5px; 
+          text-align: center; 
+          width: 100%; 
+          box-sizing: border-box; 
           display: none;
           font-size: 0.8rem;
           
         }
 
-        /* Optional: Add a pseudo-element for an error icon */
         #message:before {
-          content: "\26A0"; /* Unicode character for warning sign */
-          padding-right: 5px; /* Add some space between the icon and the text */
-          font-weight: bold; /* Make the warning sign bold */
+          content: "\26A0"; 
+          padding-right: 5px; 
+          font-weight: bold; 
         }
 
         
@@ -110,15 +106,12 @@
             width: 90%;
           }
         }
-
-        
         
     </style>
 
-
-<head>
     <title>Sign In</title>
-  </head>
+</head>
+
   <body>
     <div class="form-container">
       <h2>SQL Wizard</h2>
@@ -134,57 +127,53 @@
   
     <script>
       document.getElementById('signin-form').addEventListener('submit', function(event) {
-        event.preventDefault(); 
-        const formData = new FormData(this);
-        const formDataJSON = {};
-  
-        formData.forEach((value, key) => {
-          formDataJSON[key] = value.trim();
-        });
-  
-         fetch("/login", {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(formDataJSON)
-  })
-  .then(response => {
-    if (!response.ok) {
-      return response.json().then(err => Promise.reject(err));
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data.success) {
-      localStorage.setItem('username', formDataJSON.username);
-      window.location.href = '/home';
-    } else {
-      showErrorMessage(data.message);
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    if (error.message) {
-    // If the error response contains a data.message, display it as an error message
-      showErrorMessage(error.message);
-    } else {
-      // If the error does not contain a detailed message, display a generic error message
-      showErrorMessage('Login failed due to a server error. Please try again later.');
-    }
-  });
-});
+              event.preventDefault(); 
+              const formData = new FormData(this);
+              const formDataJSON = {};
+        
+              formData.forEach((value, key) => {
+                formDataJSON[key] = value.trim();
+              });
+        
+              fetch("/login", {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formDataJSON)
+              })
+              .then(response => {
+                if (!response.ok) {
+                  return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (data.success) {
+                  localStorage.setItem('username', formDataJSON.username);
+                  //route to home page after successful login
+                  window.location.href = '/home';
+                } else {
+                  showErrorMessage(data.message);
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                if (error.message) {
+                  showErrorMessage(error.message);
+                } else {
+                  showErrorMessage('Login failed due to a server error. Please try again later.');
+                }
+              });
+      });
   
       function showErrorMessage(message) {
 
         const messageContainer = document.getElementById('message');
-        // Ensure the message container exists
         if (messageContainer) {
-          // Set the innerHTML of the message container to show the error message
-          messageContainer.style.display = "block"; // Make the message visible
+          messageContainer.style.display = "block"; 
           messageContainer.innerHTML = message;
         } else {
-          // If the message container doesn't exist, log an error or handle accordingly
           console.error("The message container doesn't exist.");
         }
       }

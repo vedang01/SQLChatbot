@@ -495,7 +495,7 @@ def submit_confidence_score():
         session["learned_topics"] = []
     session["learned_topics"].append(topic)
 
-    # Add logic to insert the confidence score into the database
+    # logic to insert the confidence score into the database
     try:
         connection = mysql.connector.connect(
             host="localhost", database="sqlwizard", user="root", password=db_password
@@ -505,12 +505,13 @@ def submit_confidence_score():
         if connection.is_connected():
             cursor = connection.cursor()
 
+            # retrieve concept ID from database using concept name
             cursor.execute(
                 "SELECT ConceptID FROM concepts WHERE Concept = %s", (topic,)
             )
             concept_id = cursor.fetchone()[0]
 
-            # insert yser confidence values into table
+            # insert user confidence values into table
             insert_stmt = (
                 "INSERT INTO user_confidence (UserID, ConceptID, Concept, Confidence) "
                 "VALUES (%s, %s, %s, %s) "
@@ -567,7 +568,6 @@ def get_prerequisite():
 # Display suggested topics
 @app.route("/suggested_topics")
 def suggested_topics():
-    username = session.get("username")
     user_id = session.get("userID")
     try:
         connection = mysql.connector.connect(
@@ -577,12 +577,12 @@ def suggested_topics():
         if connection.is_connected():
             cursor = connection.cursor()
 
-            # Get the user ID based on the username
-            cursor.execute("SELECT UserID FROM users WHERE Username = %s", (username,))
-            user_id_result = cursor.fetchone()
-
-            if user_id_result:
-                # Get the concepts where the user's confidence score is null or less than 3
+            if user_id:
+                # For completed topics confidence greater than 3, suggest a new topic for which the
+                # completed topic is a prerequisite
+                # make sure the suggested topic is not already completed by the user
+                # joined with operations table to get the associated operation for that topic
+                # ordered by importance of the topic in the SQL learning journey
                 cursor.execute(
                     """
                     SELECT c2.Concept, o.`Operation Name`
@@ -617,9 +617,11 @@ def suggested_topics():
 
                 if len(suggested_topics) < 8:
                     # if less than 8 suggestions, then look for low confidence topics
+                    # low confidence topics are those completed topics with confidence less than 3
+                    # also look for topics that are not completed by the user
+                    # make sure no topic is already suggested by the previous query
                     cursor.execute(
                         """
-                        use sqlwizard;
                         SELECT c.Concept, o.`Operation Name`
                         FROM concepts AS c
                         LEFT JOIN user_confidence AS uc ON c.ConceptID = uc.ConceptID AND uc.UserID = %s
@@ -634,16 +636,16 @@ def suggested_topics():
                             8 - len(high_confidence_topics),
                         ),
                     )
-
                     low_confidence_topics = cursor.fetchall()
-                    print(low_confidence_topics)
-                    print(high_confidence_topics)
+
                     for concept, operation in low_confidence_topics:
                         suggested_topics.append(
                             {"Concept": concept, "Operation Name": operation}
                         )
 
                 # These are default suggested topics for new users
+                # if user completes all topics with a confidence greater than or equal to 3, then these topics
+                # will be shown too
                 if len(suggested_topics) == 0:
                     suggested_topics.append(
                         {"Concept": "SQL Basics", "Operation Name": "Creation"}
@@ -682,11 +684,8 @@ def suggested_topics():
 # Route to display completed topics for a user
 @app.route("/display_completed_topics", methods=["GET"])
 def display_completed_topics():
-    # Check if username is in session
     if "username" not in session:
         return jsonify({"success": False, "message": "User not logged in"}), 401
-
-    # username = session["username"]
     user_id = session.get("userID")
     connection = None
     try:
@@ -698,18 +697,8 @@ def display_completed_topics():
         )
         cursor = connection.cursor()
 
-        # # Fetch the userID based on the username from the session
-        # user_id_query = "SELECT UserID FROM users WHERE Username = %s"
-        # cursor.execute(user_id_query, (username,))
-        # result = cursor.fetchone()
-
-        # # If no result, the user is not found
-        # if not result:
-        #     return jsonify({"success": False, "message": "User not found"}), 404
-
-        # user_id = result[0]
-
         # fetch the completed topics and confidence levels
+        # join with operations table to find associated operation of each completed topic
         topics_query = """
             SELECT 
                 c.Concept, 
@@ -736,11 +725,6 @@ def display_completed_topics():
         if not topics:
             return jsonify({"success": False, "message": "No topics found"}), 404
 
-        # Transform the topics into a list of dictionaries to jsonify them
-        # topics_list = [
-        #     {"concept": concept, "confidence": confidence}
-        #     for concept, confidence in topics
-        # ]
         return jsonify(topics)
 
     except mysql.connector.Error as e:
@@ -756,7 +740,6 @@ def display_completed_topics():
 def view_progress():
     if "username" not in session:
         return jsonify({"success": False, "message": "User not logged in"}), 401
-    # username = session["username"]
     user_id = session.get("userID")
 
     connection = None
@@ -764,22 +747,11 @@ def view_progress():
         connection = mysql.connector.connect(
             host="localhost", database="sqlwizard", user="root", password=db_password
         )
-        # cursor = connection.cursor()
-
-        # # Fetch the userID based on the username from the session
-        # user_id_query = "SELECT UserID FROM users WHERE Username = %s"
-        # cursor.execute(user_id_query, (username,))
-        # result = cursor.fetchone()
-
-        # # If no result, the user is not found
-        # if not result:
-        #     return jsonify({"success": False, "message": "User not found"}), 404
-
-        # user_id = result[0]
 
         cursor = connection.cursor(dictionary=True)
 
         # Fetch the total number of topics per operation
+        # This is the red bar in the graph
         total_topics_query = """
         SELECT op.OperationID, op.`Operation Name`, COUNT(co.ConceptID) as TotalTopics
         FROM operations op
@@ -790,6 +762,7 @@ def view_progress():
         total_topics_results = cursor.fetchall()
 
         # Fetch the completed topics per operation for the logged-in user
+        # This is th green bar in the graph
         completed_topics_query = """
         SELECT 
             op.OperationID, 
@@ -846,7 +819,9 @@ def view_progress():
 # Route for sandbox mode
 @app.route("/sandbox", methods=["GET", "POST"])
 def sandbox():
+    # POST request if query is run against database
     if request.method == "POST":
+        # user query taken from front end
         query = request.form["query"]
         try:
             connection = mysql.connector.connect(
@@ -880,10 +855,14 @@ def sandbox():
 # Quit functionality
 @app.route("/quit", methods=["POST"])
 def quit():
+    # Get learned topics to display at the end of session
     learned_topics = session.get("learned_topics", [])
+
+    # Clear all session data, including conversation history
     session.clear()
     return jsonify(learned_topics=learned_topics)
 
 
+# App running on port 5500
 if __name__ == "__main__":
     app.run(port="5500", debug=True)

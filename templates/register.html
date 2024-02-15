@@ -47,7 +47,6 @@ h2 {
   color: #999;
 }
 
-
 .submit-button {
   background-color: #007bff;
   color: white;
@@ -85,27 +84,27 @@ a:hover {
     width: 90%;
   }
 }
+
 #message {
-  color: #D8000C; /* Red color for error messages */
-  background-color: #FFD2D2; /* Light red background */
-  margin: 20px 0; /* Add some margin above and below the message box */
-  padding: 10px; /* Add some padding inside the message box */
-  border: 1px solid #D8000C; /* A solid border that matches the text color */
-  border-radius: 5px; /* Rounded corners for a smoother look */
-  text-align: center; /* Align text to the left */
-  width: 100%; /* Ensure it spans the full width of its container */
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  color: #D8000C; 
+  background-color: #FFD2D2; 
+  margin: 20px 0; 
+  padding: 10px; 
+  border: 1px solid #D8000C; 
+  border-radius: 5px; 
+  text-align: center; 
+  width: 100%; 
+  box-sizing: border-box; 
   display: none;
   font-size: 0.8rem;
   height: 100%;
   
 }
 
-/* Optional: Add a pseudo-element for an error icon */
 #message:before {
-  content: "\26A0"; /* Unicode character for warning sign */
-  padding-right: 5px; /* Add some space between the icon and the text */
-  font-weight: bold; /* Make the warning sign bold */
+  content: "\26A0"; 
+  padding-right: 5px; 
+  font-weight: bold; 
 }
 
 #error-message{
@@ -113,26 +112,24 @@ a:hover {
 }
 
 .success-message {
-  color: #4BB543; /* Green color for success messages */
-  background-color: #D4EDDA; /* Light green background */
-  margin: 20px 0; /* Add some margin above and below the message box */
-  padding: 10px; /* Add some padding inside the message box */
-  border: 1px solid #4BB543; /* A solid border that matches the text color */
-  border-radius: 5px; /* Rounded corners for a smoother look */
-  text-align: center; /* Align text to the center */
-  width: 100%; /* Ensure it spans the full width of its container */
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
-  display: none; /* Initially hidden */
+  color: #4BB543; 
+  background-color: #D4EDDA; 
+  margin: 20px 0;
+  padding: 10px; 
+  border: 1px solid #4BB543; 
+  border-radius: 5px; 
+  text-align: center; 
+  width: 100%; 
+  box-sizing: border-box; 
+  display: none;
   font-size: 0.8rem;
 }
 
 .success-message:before {
-  content: "\2713"; /* Unicode character for a check mark */
-  padding-right: 5px; /* Add some space between the icon and the text */
-  font-weight: bold; /* Make the check mark bold */
+  content: "\2713"; 
+  padding-right: 5px;
+  font-weight: bold;
 }
-
-
 
 </style>
 
@@ -194,7 +191,7 @@ a:hover {
             showErrorMessage('Passwords do not match.');
             return;
       }
-                // Check if age is a positive integer
+        // Check if age is a positive integer
      if (!Number.isInteger(+formDataJSON.age) || +formDataJSON.age <= 0 || +formDataJSON.age >120) {
       document.getElementById("message").style.display = "block";
 
@@ -209,6 +206,7 @@ a:hover {
      return;
      }
 
+     // send registration information to server-side
      fetch("/register", {
                 method: 'POST',
                 headers: {
@@ -225,13 +223,11 @@ a:hover {
             })
             .then(data => {
                 if (data.success) {
-                    // Redirect to login page or directly log the user in as you prefer
                     showSuccessMessage('You are registered successfully!');
-
                     setTimeout(function() {
                         localStorage.setItem('username', formDataJSON.username);
-                        window.location.href = '/';
-
+                        window.location.href = '/'; // login page
+                      // show login page after a timeout
                     }, 3000);
                 } else {
                     showErrorMessage(data.message);
@@ -241,10 +237,8 @@ a:hover {
                 console.error('Error:', error);
                 
                 if (error.message) {
-                    // If the error response contains a data.message, display it as an error message
                     showErrorMessage(error.message);
                 } else {
-                    // If the error does not contain a detailed message, display a generic error message
                     showErrorMessage('Registration failed due to a server error. Please try again later.');
                 }
             });

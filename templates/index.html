@@ -6,13 +6,12 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title> SQLWizard</title>
+    <title>SQLWizard</title>
     <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/a11y-dark.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.18/css/bootstrap-select.min.css">
 
-    <!-- Add some inline CSS for the custom styles -->
     <style>
 
         body{
@@ -20,28 +19,33 @@
             background-color: #f1f1f1;
             margin-top: 60px;
         }
+
         .card-custom {
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             margin-bottom: 30px;
         }
+
         .card-header-custom {
-            background-color: #007bff; /* Bootstrap primary color */
+            background-color: #007bff;
             color: #ffffff;
         }
+
         .btn-primary {
             background-color: #0056b3;
             border: none;
             width:auto;
-            font-size: 1rem; /* Readable font size for button text */
-            padding: .5rem 1rem; /* Standard padding for buttons */
+            font-size: 1rem; 
+            padding: .5rem 1rem; 
         }
+
         .whitespace {
             margin-top: 15px;
             margin-bottom: 15px;
             
         }
+
         .intro-overlay {
             background-color: rgba(255,255,255,0.95);
             position: fixed;
@@ -69,12 +73,11 @@
         #prerequisite-div{
             margin-bottom: 15px;
         }
+
         .operation-group h4 {
-            font-size: 1.2em; /* Decrease to your preference */
+            font-size: 1.2em; 
         }
 
-    
-    
         .sql-query-block {
             background-color: #f7f9fc;
             padding: 10px;
@@ -82,6 +85,7 @@
             border-radius: 4px;
             font-family: "Courier New", monospace;
         }
+
         .suggested-topic {
             cursor: pointer;
             display: inline-block;
@@ -102,45 +106,44 @@
 
         .list-group-item {
             display: flex;
-            align-items: center; /* Aligns items vertically centered */
-            justify-content: space-between; /* Spreads out the space between items */
-            width: 100%; /* Ensures it takes the full width available */
+            align-items: center; 
+            justify-content: space-between;
+            width: 100%; 
         }
-
 
         #chat-container {
             display: flex;
             flex-direction: column;
             display: none;
-            align-items: stretch; /* This will ensure children stretch to fill the width */
+            align-items: stretch; 
         }
 
         li{
             margin-top: 15px;
             margin-bottom: 15px;
         }
+
         h3{
             margin-bottom: 1rem;
         }
+
         .btn-highlight:hover {
-        box-shadow: 0 0 0 0.1rem rgba(38, 143, 255, 0.5); /* This will create a glow effect */
+        box-shadow: 0 0 0 0.1rem rgba(38, 143, 255, 0.5); 
         }
 
-        /* Custom CSS for form-select */
         select{
         border-radius: 0.25rem;
         border: 2px solid #ced4da;
         width: 60%;
         }
 
-        /* Custom CSS for button inside input-group */
         .input-group .btn-highlight {
-        border-radius: 0 0.25rem 0.25rem 0; /* Align the radius with the select */
+        border-radius: 0 0.25rem 0.25rem 0; 
         }
 
         .session-ended-message {
         text-align: center;
-        font-size: 1.2em; /* Adjust size as needed */
+        font-size: 1.2em; 
         margin: 10px;
         }
 
@@ -157,7 +160,6 @@
             border: 1px solid #dee2e6; 
         }
 
-        /* Custom CSS for responsive tables */
         .gpt-response-table table {
         width: 40%; 
         }
@@ -178,16 +180,6 @@
         word-break: break-all!important; 
         }
 
-       /* .sql-query-block, .gpt-response-table {
-        overflow-x: auto; 
-        
-        } */
-
-
-
-
-        
-
     </style>
 </head>
 
@@ -196,12 +188,12 @@
     <div class="container mt-5">
         <!-- Adding the SQL Wizard heading -->
         <h1 class = "text-center mb-4" style="color:black; text-align:center">SQL Wizard</h1>
+        <!-- intro overlay displayed at the start of the application -->
         <div class="intro-overlay" id="introOverlay">
             <div class="container text-center">
                 <h2>Welcome to SQL Wizard</h2>
                 <p>SQL Wizard is a personalized educational chatbot designed to teach SQL. There are several features you can use to enhance your SQL learning journey.</p>
                 
-                <!-- New addition starts here -->
                 <div class="user-options">
                     <p class="lead">Once logged in, you can:</p>
                     <ul class="list-unstyled">
@@ -213,7 +205,6 @@
                         <li><strong>Progress Tracker:</strong> View your learning progress and review topics you've mastered.</li>
                     </ul>
                 </div>
-                <!-- New addition ends here -->
 
                 <button class="btn btn-primary mt-4" onclick="closeIntro()">Begin Journey</button>
             </div>
@@ -229,7 +220,7 @@
                     {% if show_options %}
                     <div id="user-preferences">
 
-                        <h3>Welcome, {{ session['firstname'] }}! What would you like to do today?</h3>
+                        <h3>Welcome, {{ session['firstname'] }}! Please choose one of the following options</h3>
 
                         <div class = "input-group mb-3">
                             <select id="user-choice">
@@ -267,6 +258,7 @@
                 </div>
             </div> 
             
+            <!-- Interface for chatting with gpt3.5 model -->
             <div id = "chat-container">    
                 <div id="list-group" class="list-group w-auto mt-3">
                     <div class="list-group-item d-flex gap-3 py-3 bot-message">
@@ -290,6 +282,8 @@
                     </div>
                 </div>
             </div>
+
+            <!-- loading indicator -->
             <div id="loading-indicator" style="display: none;">
                 <div class="spinner-border text-primary" role="status">
                     <!-- <span class="sr-only">Loading...</span> -->
@@ -308,7 +302,7 @@
                     </div>
             </div>
                     
-                <!-- View Progress Card -->
+            <!-- View Progress Card -->
             <div class="col-md-3">
                     <div class="card card-custom mb-3">
                         <div class="card-body">
@@ -317,7 +311,6 @@
                             <button id="view-progress-btn" class="btn btn-primary">View Progress</button>                    </div>
                     </div>
             </div>    
-            
             
             <!-- Completed Topics Card -->
             <div class="col-md-3">
@@ -344,10 +337,7 @@
             </div>
             
 
-
-        
-      
-            <!-- Add a Finish Topic button and a hidden form for confidence score submission -->
+            <!--Finish Topic button and a hidden form for confidence score submission -->
             <div id="finish-topic-container" style="display:none;">
                 <button id="finish-topic-btn" class="btn btn-primary">Finish Topic</button>
                 <div id="confidence-form" style="display:none; margin-top: 0.7rem;">
@@ -357,21 +347,16 @@
                 </div>
             </div>
 
-           
-
             <div class = "completed-topics-text-container">
-
+                <!-- completed topics will be rendered here -->
             </div>
-            <!-- for rendering graph -->
         
             <div id = "progress-chart-container">
-                <canvas id="progress-chart" width="400" height="50"></canvas>
+                <canvas id="progress-chart" width="400" height="50">
+                <!-- for rendering graph -->
+                </canvas>
             </div>
 
-            
-
-
-        
         </div>
     </div>
         
@@ -380,13 +365,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // let topic_exists = 0;
+
         setInterval(highlightAll, 1000);
+        // for highlighting SQL code in GPT response
         function highlightAll() {
             document.querySelectorAll("pre code").forEach(block => {
                 hljs.highlightBlock(block);
             });
         }
+
+        // closing intro overlay on button click 
         function closeIntro() {
             document.getElementById('introOverlay').style.display = 'none';
         }
@@ -397,14 +385,12 @@
         // Main Driver function, askSQLWizard sends question to API, receives response, and displays using addMessage
         function askSQLWizard(){
             showLoadingIndicator();
-             const question = chatInput.value.trim();
+            const question = chatInput.value.trim();
     
             if (question) {
                 
-                
                 //user asks question
                 addMessage(question, true);
-                //send message
 
                 //before sending to API, make sure user question/answer is SQL-related
                 
@@ -430,46 +416,44 @@
                         hideLoadingIndicator();
                         return; 
                     }
-                    else{
+                    else {
                     // sql related question
-                fetch("/callapi", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ prompt: question })
-                })
-                    .then(response => {
-                        if (!response.ok) {  // Check if the response status is not in the 200-299 range
-                            return response.json().then(data => {
-                                throw new Error(data.error || "Unknown error occurred.");
+                        fetch("/callapi", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ prompt: question })
+                        })
+                            .then(response => {
+                                if (!response.ok) {  
+                                    return response.json().then(data => {
+                                        throw new Error(data.error || "Unknown error occurred.");
+                                    });
+                                }
+                            return response.json();
+                            })
+                            .then(data => {
+                                hideLoadingIndicator();
+                                addMessage(data.answer, false);
+                            })
+                            .catch(error => {
+                                console.error("Error fetching response:", error);
+                                addMessage("Failed to get a response. Please try again.", false);
                             });
-                        }
-                    return response.json();
-                    })
-                    .then(data => {
-                        hideLoadingIndicator();
-                        addMessage(data.answer, false);
-                    })
-                    .catch(error => {
-                        console.error("Error fetching response:", error);
-                        addMessage("Failed to get a response. Please try again.", false);
-                    });
                     }
                 })
                 .catch(error => {
                     console.error("Error checking SQL-related:", error);
                     addMessage("There was an error processing your request: ${error}", false);
                 });
-                
-                
-                
+            
             }
             chatInput.value = '';
         }
 
         
-
+        // function to fetch all topics from table, to display to user
         function fetchAndDisplayTopics() {
             fetch("/fetch_all_topics")
             .then(response => {
@@ -497,11 +481,11 @@
             .catch(error => console.error('Error:', error));
         }
 
+        // different functionalities for 3 different user choices
         async function handleUserChoice() {
             const choice = document.getElementById("user-choice").value;
             const userPreferences = document.getElementById("user-preferences");
             const chatContainer = document.getElementById("chat-container");
-
             const topicSelectionDiv = document.getElementById("topic-selection");
             const chatInput = document.getElementById('chat-input');
 
@@ -517,7 +501,6 @@
                     chatContainer.style.display = 'block';
                     clearChat();
                     addMessage("Ask an SQL-related question.", false)
-                    //userPreferences.style.display = 'none';
                     chatInput.disabled = false;
                     break;
 
@@ -526,7 +509,6 @@
                     clearChat();
                     showLoadingIndicator();
                     addMessage("Please wait while I generate an overview for you...");
-                    //userPreferences.style.display = 'none';
                     chatInput.disabled = true;
                     await fetchOverview();
                     chatInput.disabled = false;
@@ -538,12 +520,7 @@
             }
         }
 
-        // function fetchOverview(){
-        //     fetch("/generate_sql_overview")
-        //     .then(response => response.json())
-        //     .then(data => addMessage(data.overview, false))
-        //     .catch(error => console.error('Error:', error));
-        // }
+        // function to fetch a basic overview for SQL 
         async function fetchOverview() {
             try {
                 const response = await fetch("/generate_sql_overview");
@@ -555,12 +532,14 @@
             }
         }
         
+        // function to clear chatInput
         function clearChat() {
             // Clear the chat history or reset the environment for doubt clearing
             const listGroup = document.getElementById('list-group');
             listGroup.innerHTML = ''; // This will remove all child elements in the chat history
         }
 
+        // choose topic to learn 
         function submitTopic() {
             const selectedTopic = document.getElementById("topic-dropdown").value;
             if(selectedTopic){
@@ -573,7 +552,7 @@
                 document.getElementById('topic-selection').style.display = 'none';
                 document.getElementById('finish-topic-container').style.display = 'none'; // Initially hide the Finish Topic button
 
-
+                // modified callapi route, for a particular topic 
                 fetch("/learn_topic", {
                 method: 'POST',
                 headers: {
@@ -599,10 +578,7 @@
                 // ask user to select topic
                 alert("Please select a topic first.");
                 hideLoadingIndicator();
-
-
             }
-            // Add logic to send the selected topic to the backend and get the response
         }
 
         // Submitting confidence score after finishing topic
@@ -632,16 +608,15 @@
                     document.getElementById('user-preferences-div').style.display = 'block';
                     document.getElementById('topic-selection').style.display = 'none';
                     document.getElementById('finish-topic-container').style.display = 'none';
-
-                    // topic_exists = 1;
                     document.getElementById('chat-input').disabled = true; // Keep chat input disabled until a new selection is made
                 })
                 .catch(error => console.error('Error:', error));
             }
         }
 
+        // display suggested topics according to the user's completed topics
         function displaySuggestedTopics() {
-            fetch("/suggested_topics") // Adjust this endpoint to your API that runs the query
+            fetch("/suggested_topics") 
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok: ' + response.statusText);
@@ -652,9 +627,9 @@
                 const suggestionsDiv = document.getElementById("suggestions-div");
                 suggestionsDiv.innerHTML = '<h4>Suggested Topics: </h4>'; // Clear existing suggestions
                 
-                // Assuming `data` is an array of objects with `Concept` and `Operation Name` keys
+                // data is an array of objects with `Concept` and `Operation Name` keys
                 const groupedByOperation = data.reduce((acc, topic) => {
-                    // Initialize the array if this operation hasn't been seen before
+                    // Initialize the array if an operation hasn't been seen before
                     if (!acc[topic['Operation Name']]) {
                         acc[topic['Operation Name']] = [];
                     }
@@ -685,9 +660,8 @@
             .catch(error => console.error('Error fetching suggested topics:', error));
         }
 
-
+        // Set the topic in the dropdown to the selected suggested topic
         function selectTopic(topic) {
-            // Set the topic in the dropdown to the selected suggested topic
             const topicDropdown = document.getElementById("topic-dropdown");
             topicDropdown.value = topic;
             // Call submitTopic as if the user selected the topic from the dropdown and submitted
@@ -695,39 +669,31 @@
         }
 
 
-
         //Event listeners for the button click or enter key press
 
         document.querySelector('#gpt-button').addEventListener('click', askSQLWizard);
-        chatInput.addEventListener('keydown', function (event) {
-            if (event.keyCode === 13) { // Check if the key code is 13 (Enter key)
-                event.preventDefault(); // Prevent the default action (like form submission)
-                askSQLWizard();
-            }
+            chatInput.addEventListener('keydown', function (event) {
+                if (event.keyCode === 13) { // Check if the key code is 13 (Enter key)
+                    event.preventDefault(); // Prevent the default action (like form submission)
+                    askSQLWizard();
+                }
         });
 
-         document.getElementById('practice-sql-button').addEventListener('click', function() {
-             window.location.href = '/sandbox'; // Redirect to the sandbox page
-         });
-
-
-
+        document.getElementById('practice-sql-button').addEventListener('click', function() {
+            window.location.href = '/sandbox'; // Redirect to the sandbox page
+        });
 
         document.getElementById('finish-topic-btn').addEventListener('click', function() {
-        const finishTopicContainer = document.getElementById('finish-topic-container');
-        const confidenceForm = document.getElementById('confidence-form');
-        const chatContainer = document.getElementById("chat-container");
+            const finishTopicContainer = document.getElementById('finish-topic-container');
+            const confidenceForm = document.getElementById('confidence-form');
+            const chatContainer = document.getElementById("chat-container");
 
-        
-        // Show the form to submit the confidence score
-        finishTopicContainer.style.display = 'inline-block';
-        confidenceForm.style.display = 'block';
-        chatContainer.style.display = 'none';
+            // Show the form to submit the confidence score
+            finishTopicContainer.style.display = 'inline-block';
+            confidenceForm.style.display = 'block';
+            chatContainer.style.display = 'none';
 
-
-        //addMessage("Great Job! Try practicing what you learnt in Sandbox Mode.", false);
         });
-
 
 
         document.getElementById("topic-dropdown").addEventListener("change", function() {
@@ -735,6 +701,7 @@
             fetchPrerequisite(selectedTopic);
         });
 
+        // fetch prerequisite of a topic
         function fetchPrerequisite(topic) {
             fetch('/get_prerequisite', {
                 method: 'POST',
@@ -750,6 +717,7 @@
             .catch(error => console.error('Error:', error));
         }
 
+        // populate prerequisite div with the prerequisite 
         function displayPrerequisite(prerequisite) {
             const prerequisiteDiv = document.getElementById("prerequisite-div");
             if(!prerequisite){
@@ -760,10 +728,12 @@
         
         let progressChart;
 
+        // event listener to display progress chart using chart.js
         document.getElementById('view-progress-btn').addEventListener('click', function() {
             const button = this;
             const progressChartCanvas = document.getElementById('progress-chart');
 
+            
             if(button.textContent.includes('View Progress')){
 
                 fetch('/view_progress')
@@ -774,9 +744,10 @@
                         return response.json();
                     })
                     .then(graphData => {
+                        // 2d graph
                         const ctx = document.getElementById('progress-chart').getContext('2d');
                         progressChart = new Chart(ctx, {
-                            type: 'bar',
+                            type: 'bar', //bar graph 
                             data: {
                                 labels: graphData.operations,
                                 datasets: [
@@ -804,14 +775,15 @@
                                             beginAtZero: true
                                         }
                                     },
-                                    // y: {
-                                    // }
+                        
                                 },
                                 responsive: true,
                                 maintainAspectRatio: true,
                                 aspectRatio:2
                             }
                         });
+                        //toggle button 
+
                         button.textContent = 'Hide Progress';
                         button.classList.remove('btn-primary');
                         button.classList.add('btn-danger');
@@ -822,7 +794,7 @@
             }
             else{
                 if (progressChart) {
-                    progressChart.destroy(); // This is how you would normally clear a Chart.js chart
+                    progressChart.destroy(); // clear a Chart.js chart
                 }
                 document.getElementById("progress-chart").innerHTML = ''; // Clear any residual markup
 
@@ -833,9 +805,7 @@
             }
         });
 
-
-        
-
+        // quit functionality
        document.getElementById('quit-button').addEventListener('click', function() {
                 fetch("/quit", {
                     method: "POST"
@@ -855,13 +825,9 @@
                     document.getElementById('finish-topic-container').style.display = 'none';
                     document.getElementById('gpt-button').disabled = true;
                     document.getElementById('quit-button').disabled = true;
-                    // let message = "Session ended. Thank you for using SQLWizard!";
-                    // if(topic_exists)
-                    //     message = message + "You learned the following topics: " + learnedTopics.join(','); 
-                    // addMessage(message, false);
-
-                    // clearChat();
+                    
                     let message = "<div class='session-ended-message'> Session ended. Thank you for using SQLWizard!</div>";
+                    // display all the topics learned during session, if any 
                     if(learnedTopics.length > 0) {
                         message += "<div class='session-ended-message'> You learned the following topics: " + learnedTopics.join(', ') + "</div>";
                     }
@@ -869,7 +835,7 @@
                     
 
                     // Change the content of the card body to the end session message
-                    const cardBody = document.querySelector('.card-body'); // Make sure this selector targets the correct card
+                    const cardBody = document.querySelector('.card-body'); 
                     const chatContainer = document.querySelector('#chat-container');
                     document.querySelector('.user-preferences-div')
                     chatContainer.innerHTML = message;
@@ -891,13 +857,15 @@
             // Check if the content has code block
             let formattedMessage = message;
 
+            // format any SQL code, HTML tables, and bullet points in GPT response 
+
+            //currently, this wraps up the whole response in a <table> tag, which needs changing
+    
             formattedMessage = formatBotResponse(formattedMessage);
             formattedMessage = formatGPTResponse(formattedMessage);
             formattedMessage = formatGPTResponseToHTMLTable(formattedMessage);
 
-            console.log(formattedMessage);
-                
-
+            // populate formattedMessage in div
             let html_data = `
                  <div class="list-group-item d-flex gap-3 py-3 ${messageType}">
                     <img src="${logoURL}" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
@@ -966,12 +934,8 @@
                 tableHTML += `<p>${line}</p>`;
                 }
             });
-
-            // Close the table tag
             tableHTML += '</table>';
             tableHTML = `<div class="gpt-response-table">${tableHTML}</div>`;
-
-            
             return tableHTML;
         }
 
@@ -985,36 +949,6 @@
             return content;
         }
 
-        // function formatBotResponse(content) {
-        //     console.log("Reached in formatting function for SQL :)", content);
-
-        //     // Handle line breaks for SQL code explicitly
-        //     if (content.trim().startsWith('sql')) {
-        //         content = content.replace(/^sql/g, '').trim(); // Remove the 'sql' prefix
-        //         content = `<pre><code>${content}</code></pre>`; // Wrap the SQL code with pre and code tags
-        //     } else {
-        //         content = content.replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>');
-        //     }
-
-        //     console.log("Formatted content:", content);
-        //     return content;
-        // }
-        //function formatBotResponse(content) {
-//     // Define SQL keywords to look for
-//     const sqlKeywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'ON', 'AND', 'OR', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE'];
-//     const regexPattern = new RegExp(`\\b(${sqlKeywords.join('|')})\\b`, 'g');
-
-//     // Insert a line break before each capitalized SQL keyword
-//     content = content.replace(regexPattern, (match) => `<br>${match}`);
-
-//     // Wrap SQL code with pre and code tags if it's contained within a code block
-//     content = content.replace(/```([\s\S]+?)```/g, (match, code) => `<pre><code>${code}</code></pre>`);
-
-//     return content;
-// }
-
-
-
         //Function to show loading indicator
         function showLoadingIndicator() {
             document.getElementById('loading-indicator').style.display = 'block';
@@ -1025,81 +959,66 @@
             document.getElementById('loading-indicator').style.display = 'none';
         }
 
-        
+        // disable chat input at the beginning
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('chat-input').disabled = true;
         });
 
         window.onload = function() {
-        const completedTopicsButton = document.getElementById('completed-topics-button');
-        if (completedTopicsButton) {
+            const completedTopicsButton = document.getElementById('completed-topics-button');
+            if (completedTopicsButton) {
 
-            completedTopicsButton.addEventListener('click', function() {
-            // fetch and display completed topics
+                completedTopicsButton.addEventListener('click', function() {
+                // fetch and display completed topics
 
-            if(completedTopicsButton.textContent.includes('View Completed Topics')){
-                fetch('/display_completed_topics')
-                    .then(response => response.json())
-                        .then(data => {
-                        // Call a function to render data
-                        renderCompletedTopics(data);
-                        completedTopicsButton.textContent = 'Hide Completed Topics';
-                        completedTopicsButton.classList.remove('btn-primary');
-                        completedTopicsButton.classList.add('btn-danger');
-                        })
-                        .catch(error => {
-                        console.error('Error:', error);
-                        });
-            }
-            else{
-                const container = document.querySelector(".completed-topics-text-container");
-                container.innerHTML = '';
-                completedTopicsButton.textContent = 'View Completed Topics';
-                completedTopicsButton.classList.remove('btn-danger');
-                completedTopicsButton.classList.add('btn-primary');
-
-
-            }
+                    if(completedTopicsButton.textContent.includes('View Completed Topics')){
+                        fetch('/display_completed_topics')
+                            .then(response => response.json())
+                                .then(data => {
+                                // Call a function to render data
+                                renderCompletedTopics(data);
+                                completedTopicsButton.textContent = 'Hide Completed Topics';
+                                completedTopicsButton.classList.remove('btn-primary');
+                                completedTopicsButton.classList.add('btn-danger');
+                                })
+                                .catch(error => {
+                                console.error('Error:', error);
+                                });
+                    }
+                    else{
+                        const container = document.querySelector(".completed-topics-text-container");
+                        container.innerHTML = '';
+                        completedTopicsButton.textContent = 'View Completed Topics';
+                        completedTopicsButton.classList.remove('btn-danger');
+                        completedTopicsButton.classList.add('btn-primary');
 
 
-            });
-
-        } 
-        
-        
-        else {
-            console.error('completed-topics-button element not found');
-        }
-
-        function renderCompletedTopics(data) {
-            const container = document.querySelector(".completed-topics-text-container");
-            if (data.length > 0) {
-                let tableHtml = '<table class="table"><tr><th>Concept Name</th><th>Database Activity</th><th>Confidence Level</th></tr>';
-
-                    data.forEach(row => {
-                    tableHtml += `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`;
+                    }
                 });
-                tableHtml += '</table>';
-                container.innerHTML = tableHtml;
-            } else {
-                container.innerHTML = '<p class = "no-topics-message">No completed topics to display.</p>';
+            } 
+            
+            
+            else {
+                console.error('completed-topics-button element not found');
             }
-        }
+
+            // render a table of user's completed topics
+            function renderCompletedTopics(data) {
+                const container = document.querySelector(".completed-topics-text-container");
+                if (data.length > 0) {
+                    let tableHtml = '<table class="table"><tr><th>Concept Name</th><th>Database Activity</th><th>Confidence Level</th></tr>';
+
+                        data.forEach(row => {
+                        tableHtml += `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`;
+                    });
+                    tableHtml += '</table>';
+                    container.innerHTML = tableHtml;
+                } else {
+                    container.innerHTML = '<p class = "no-topics-message">No completed topics to display.</p>';
+                }
+            }
 
         };
-
-
-
-        // // Added this function to run on page load to clear the session
-        // window.onload = function() {
-        //     fetch("/quit", {
-        //         method: "POST"
-        //     }).then(() => {
-        //         // Session cleared, you can handle additional logic here if needed
-        //     });
-        // };
     </script>
-
 </body>
-
 </html>
