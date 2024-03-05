@@ -166,6 +166,8 @@
                     document.getElementById("message").innerText = "Error: " + data.error;
                 } else {
                     // Format and display data
+                    document.getElementById("message").innerText = '';
+                    document.getElementById("message").style.display = 'none';
                     $(document.getElementById("query-results")).html('<table id="result-table" class="display table table-striped table-bordered"></table>');
 
                     window.resultTable = $('#result-table').DataTable({

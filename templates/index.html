@@ -542,6 +542,7 @@
         // choose topic to learn 
         function submitTopic() {
             const selectedTopic = document.getElementById("topic-dropdown").value;
+            console.log(selectedTopic)
             if(selectedTopic){
                 showLoadingIndicator();
                 document.getElementById("chat-container").style.display = 'block';
@@ -929,7 +930,6 @@
                 tableHTML += '</tr>';
                 } 
                 else {
-                    console.log(":(")
                 // If the line is not a table row, it's a regular text. Wrap it with <p>
                 tableHTML += `<p>${line}</p>`;
                 }
@@ -943,7 +943,6 @@
 
 
         function formatBotResponse(content) {
-            console.log("reached in formatting function for SQL :)");
             // Match content that starts with ```sql and ends with ```
             content = content.replace(/```sql\n([\s\S]+?)```/g, '</p><br><pre><code class="sql">$1</code></pre><br><p>');
             return content;

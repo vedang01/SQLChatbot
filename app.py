@@ -41,10 +41,10 @@ def generateChatResponse(prompt, topic=""):
 
     # If user wants to learn about a specific topic
     if topic:
-        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Give a brief summary along with an example. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format."
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Give a brief summary along with an example. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format. Remember to populate these tables with appropriate data. IT IS IMPORTANT THAT YOU DO NOT ASK THE USERS TO PRACTICE. Instead, append the line 'Feel free to ask any further questions. If you're ready, try practicing this concept in Sandbox Mode.' at the end of your response."
     else:
         # User wants to ask SQL wizard a general question
-        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format."
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format. Remember to refer to previous conversations as a reference to what the user asks."
 
     # Include the personalized prompt in the conversation history
     session["conversation_history"].append(
@@ -58,6 +58,7 @@ def generateChatResponse(prompt, topic=""):
 
     try:
         answer = response.choices[0].message.content
+
         session["conversation_history"].append({"role": "assistant", "content": answer})
         display_prompt = prompt
         display_answer = answer.replace(
@@ -568,6 +569,8 @@ def get_prerequisite():
 # Display suggested topics
 @app.route("/suggested_topics")
 def suggested_topics():
+    # Create a list to hold all suggested topics including high and low confidence
+    suggested_topics = []
     user_id = session.get("userID")
     try:
         connection = mysql.connector.connect(
@@ -578,6 +581,41 @@ def suggested_topics():
             cursor = connection.cursor()
 
             if user_id:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM user_confidence
+                    WHERE UserID = %s
+                    """,
+                    (user_id,),
+                )
+                completed_topics_count = cursor.fetchone()[0]
+
+                # For new users with no completed topics, suggest predefined topics
+                # concept names should match exactly with the names in the database
+                if completed_topics_count == 0:
+                    suggested_topics.append(
+                        {"Concept": "SQL Basics", "Operation Name": "Creation"}
+                    )
+                    suggested_topics.append(
+                        {"Concept": "'SELECT' Statement", "Operation Name": "Retrieval"}
+                    )
+                    suggested_topics.append(
+                        {"Concept": "'WHERE' Clause", "Operation Name": "Retrieval"}
+                    )
+                    suggested_topics.append(
+                        {"Concept": "NULL values", "Operation Name": "Miscellaneous"}
+                    )
+                    suggested_topics.append(
+                        {"Concept": "Data Types", "Operation Name": "Miscellaneous"}
+                    )
+                    suggested_topics.append(
+                        {"Concept": "Constraints", "Operation Name": "Creation"}
+                    )
+                    return jsonify(suggested_topics)
+
+                # if not a new user
+
                 # For completed topics confidence greater than 3, suggest a new topic for which the
                 # completed topic is a prerequisite
                 # make sure the suggested topic is not already completed by the user
@@ -605,9 +643,6 @@ def suggested_topics():
                 )
 
                 high_confidence_topics = cursor.fetchall()
-
-                # Create a list to hold all suggested topics including high and low confidence
-                suggested_topics = []
 
                 # Process high confidence topics
                 for concept, operation in high_confidence_topics:
@@ -646,25 +681,25 @@ def suggested_topics():
                 # These are default suggested topics for new users
                 # if user completes all topics with a confidence greater than or equal to 3, then these topics
                 # will be shown too
-                if len(suggested_topics) == 0:
-                    suggested_topics.append(
-                        {"Concept": "SQL Basics", "Operation Name": "Creation"}
-                    )
-                    suggested_topics.append(
-                        {"Concept": "SELECT statement", "Operation Name": "Retrieval"}
-                    )
-                    suggested_topics.append(
-                        {"Concept": "WHERE clause", "Operation Name": "Retrieval"}
-                    )
-                    suggested_topics.append(
-                        {"Concept": "NULL values", "Operation Name": "Miscellaneous"}
-                    )
-                    suggested_topics.append(
-                        {"Concept": "Data Types", "Operation Name": "Miscellaneous"}
-                    )
-                    suggested_topics.append(
-                        {"Concept": "Constraints", "Operation Name": "Creation"}
-                    )
+                # if len(suggested_topics) == 0:
+                #     suggested_topics.append(
+                #         {"Concept": "SQL Basics", "Operation Name": "Creation"}
+                #     )
+                #     suggested_topics.append(
+                #         {"Concept": "SELECT statement", "Operation Name": "Retrieval"}
+                #     )
+                #     suggested_topics.append(
+                #         {"Concept": "WHERE clause", "Operation Name": "Retrieval"}
+                #     )
+                #     suggested_topics.append(
+                #         {"Concept": "NULL values", "Operation Name": "Miscellaneous"}
+                #     )
+                #     suggested_topics.append(
+                #         {"Concept": "Data Types", "Operation Name": "Miscellaneous"}
+                #     )
+                #     suggested_topics.append(
+                #         {"Concept": "Constraints", "Operation Name": "Creation"}
+                #     )
 
                 return jsonify(suggested_topics[:8])
             else:
