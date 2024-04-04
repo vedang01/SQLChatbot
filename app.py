@@ -38,13 +38,14 @@ def generateChatResponse(prompt, topic=""):
     age = session.get("age")
     profession = session.get("profession")
     proficiency = session.get("proficiency")
+    reason = session.get("reason")
 
     # If user wants to learn about a specific topic
     if topic:
-        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Give a brief summary along with an example. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format. Remember to populate these tables with appropriate data. IT IS IMPORTANT THAT YOU DO NOT ASK THE USERS TO PRACTICE. Instead, append the line 'Feel free to ask any further questions. If you're ready, try practicing this concept in Sandbox Mode.' at the end of your response."
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, wants to learn about {topic}. Remember, he is learning SQL because of the reason: {reason}. In your answer, try relating it to the aforementioned reason, and to their profession : {profession}. Give a brief summary along with an example. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format. Remember to populate these tables with appropriate data. IT IS IMPORTANT THAT YOU DO NOT ASK THE USERS TO PRACTICE. Instead, append the line 'Feel free to ask any further questions. If you're ready, try practicing this concept in Sandbox Mode.' at the end of your response."
     else:
         # User wants to ask SQL wizard a general question
-        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format. Remember to refer to previous conversations as a reference to what the user asks."
+        personalized_prompt = f"{first_name}, who is a {profession} aged {age} with {proficiency} proficiency, asks: {prompt}. Format your responses with appropriate line breaks for bullet points. Also please display any tables in HTML format. Remember to refer to previous conversations as a reference to what the user asks, and also the reason why the user wants to learn SQL: {reason}, and to their profession: {profession}. Try to relate your answer to the aforementioned reason and profession. Give an example to support your explanation. IT IS IMPORTANT THAT YOU DO NOT ASK THE USERS TO PRACTICE. Instead, append the line 'Feel free to ask any further questions. If you're ready, try practicing this concept in Sandbox Mode.' at the end of your response."
 
     # Include the personalized prompt in the conversation history
     session["conversation_history"].append(

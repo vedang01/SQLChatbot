@@ -483,6 +483,9 @@
 
         // different functionalities for 3 different user choices
         async function handleUserChoice() {
+
+            document.getElementById("suggestions-div").innerHTML='';
+            document.getElementById("topic-selection").style.display='none';
             const choice = document.getElementById("user-choice").value;
             const userPreferences = document.getElementById("user-preferences");
             const chatContainer = document.getElementById("chat-container");
@@ -491,6 +494,7 @@
 
             switch (choice) {
                 case "select_topic":
+
                     chatInput.disabled = true; // Disable chat input until a topic is submitted
                     topicSelectionDiv.style.display = 'block';
                     fetchAndDisplayTopics();
@@ -862,9 +866,11 @@
 
             //currently, this wraps up the whole response in a <table> tag, which needs changing
     
-            formattedMessage = formatBotResponse(formattedMessage);
-            formattedMessage = formatGPTResponse(formattedMessage);
+            // formattedMessage = formatBotResponse(formattedMessage);
+
             formattedMessage = formatGPTResponseToHTMLTable(formattedMessage);
+
+            formattedMessage = formatGPTResponse(formattedMessage);
 
             // populate formattedMessage in div
             let html_data = `
@@ -914,17 +920,16 @@
             lines.forEach(line => {
                 // Check if the line is a table row
                 if (line.trim().startsWith('|')) {
-                    console.log("in table formatting")
-                // Remove leading and trailing pipes, then split by pipe separator
-                const rowData = line.trim().slice(1, -1).split('|');
-                
-                // Start a table row
-                tableHTML += '<tr>';
-                
-                // For each cell in the row data, add a table cell
-                rowData.forEach(cell => {
-                    tableHTML += `<td>${cell.trim()}</td>`;
-                });
+                    // Remove leading and trailing pipes, then split by pipe separator
+                    const rowData = line.trim().slice(1, -1).split('|');
+                    
+                    // Start a table row
+                    tableHTML += '<tr>';
+                    
+                    // For each cell in the row data, add a table cell
+                    rowData.forEach(cell => {
+                        tableHTML += `<td>${cell.trim()}</td>`;
+                    });
                 
                 // End the table row
                 tableHTML += '</tr>';
