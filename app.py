@@ -679,29 +679,6 @@ def suggested_topics():
                             {"Concept": concept, "Operation Name": operation}
                         )
 
-                # These are default suggested topics for new users
-                # if user completes all topics with a confidence greater than or equal to 3, then these topics
-                # will be shown too
-                # if len(suggested_topics) == 0:
-                #     suggested_topics.append(
-                #         {"Concept": "SQL Basics", "Operation Name": "Creation"}
-                #     )
-                #     suggested_topics.append(
-                #         {"Concept": "SELECT statement", "Operation Name": "Retrieval"}
-                #     )
-                #     suggested_topics.append(
-                #         {"Concept": "WHERE clause", "Operation Name": "Retrieval"}
-                #     )
-                #     suggested_topics.append(
-                #         {"Concept": "NULL values", "Operation Name": "Miscellaneous"}
-                #     )
-                #     suggested_topics.append(
-                #         {"Concept": "Data Types", "Operation Name": "Miscellaneous"}
-                #     )
-                #     suggested_topics.append(
-                #         {"Concept": "Constraints", "Operation Name": "Creation"}
-                #     )
-
                 return jsonify(suggested_topics[:8])
             else:
                 return jsonify({"message": "User not found"}), 404
